@@ -46,10 +46,6 @@ def setup_logging():
     ))
 
     logging.info(f"Logging warnings and errors to file: {os.path.abspath('warnings.log')}")
-# Constants for file paths
-CLUSTER_FILE = 'data/external/albert-base-v1/layer0/clusters-600.txt'
-SENTENCE_FILE = 'data/external/albert-base-v1/sentences.json'
-ANNOTATIONS_FILE = 'data/external/albert-base-v1/layer0/annotations.json'
 
 def load_clusters(cluster_file):
     """Load clusters from a specified file into a dictionary."""
@@ -79,15 +75,15 @@ def load_definitions(definition_file):
     logging.info(f"Loaded {len(definitions)} definitions")
     return definitions
 
-def filter_dataset(concept_id, clusters, sentences):
+def filter_dataset(cluster_id, clusters, sentences):
     """Filter the dataset based on the provided concept ID."""
     tokens = []
     labels = []
     skipped_count = 0
 
-    if concept_id in clusters:
-        logging.info(f"Found concept_id {concept_id} in clusters")
-        for word, sentence_id, word_id in clusters[concept_id]:
+    if cluster_id in clusters:
+        logging.info(f"Found cluster_id {cluster_id} in clusters")
+        for word, sentence_id, word_id in clusters[cluster_id]:
             sentence_index = int(sentence_id)
             if 0 <= sentence_index < len(sentences):
                 sentence = sentences[sentence_index]
@@ -97,7 +93,7 @@ def filter_dataset(concept_id, clusters, sentences):
                 if 0 <= word_index < len(words):
                     tokens.append(sentence)
                     label_line = ["N/A"] * len(words)
-                    label_line[word_index] = concept_id
+                    label_line[word_index] = cluster_id
                     labels.append(" ".join(label_line))
                 else:
                     skipped_count += 1
@@ -106,17 +102,17 @@ def filter_dataset(concept_id, clusters, sentences):
                 skipped_count += 1
                 logging.debug(f"Skipped: Sentence index {sentence_index} is out of range.")
     else:
-        logging.warning(f"Concept_id {concept_id} not found in clusters")
+        logging.warning(f"Concept_id {cluster_id} not found in clusters")
     
-    logging.info(f"Filtered {len(tokens)} tokens for concept_id {concept_id}")
+    logging.info(f"Filtered {len(tokens)} tokens for cluster_id {cluster_id}")
     if skipped_count > 0:
         logging.warning(f"Skipped {skipped_count} entries due to out-of-range indices.")
     return tokens, labels
 
-def save_output(tokens, labels, concept_id):
+def save_output(tokens, labels):
     """Save tokens and labels to their respective output files."""
-    token_output_file = os.path.dirname(CLUSTER_FILE) + '/tcn-tokens-' + concept_id + '.txt'
-    label_output_file = os.path.dirname(CLUSTER_FILE) + '/tcn-labels-' + concept_id + '.txt'
+    token_output_file = 'tcn-tokens.txt'
+    label_output_file = 'tcn-labels.txt'
 
     if tokens and labels:
         with open(token_output_file, 'w') as f:
@@ -127,43 +123,53 @@ def save_output(tokens, labels, concept_id):
             f.write('\n'.join(labels) + '\n')
         logging.info(f"Labels file created at: {os.path.abspath(label_output_file)}")
 
-        logging.info(f"Saved output files for concept_id {concept_id}")
+        logging.info(f"Saved output files")
     else:
-        logging.warning(f"No data to save for concept_id {concept_id}")
+        logging.warning(f"No data to save")
 
 def main():
     """Main function to execute the script."""
     setup_logging()
-    
     if len(sys.argv) != 2:
-        logging.error("Usage: python3 filter_dataset.py <concept_id>")
+        print("Usage: python3 filter_tcn.py <cluster_ids_file>")
         sys.exit(1)
 
-    concept_id = sys.argv[1]
-    logging.info(f"Processing concept_id: {concept_id}")
-    
-    # Load the definitions and check for the concept ID
-    definitions = load_definitions(ANNOTATIONS_FILE)
-    
-    if concept_id in definitions:
-        definition = definitions[concept_id]
-        logging.info(f"Concept Definition for {concept_id}: {definition}")
-    else:
-        logging.error(f"Error: concept_id {concept_id} not found in definitions.")
-        sys.exit(1)
+    cluster_ids_file = sys.argv[1]
+    with open(cluster_ids_file, 'r') as f:
+        cluster_ids = json.load(f)  # Load the JSON data
+        
+    tokens_accum = []
+    labels_accum = []
 
-    sentences = load_sentences(SENTENCE_FILE)
-    clusters = load_clusters(CLUSTER_FILE)
-
-    concept_id = concept_id[1:]
-    logging.info(f"Processing concept_id without leading character: {concept_id}")
-    tokens, labels = filter_dataset(concept_id, clusters, sentences)
+    for layer_path, cluster_id in cluster_ids.items():
+        cluster_file = layer_path + '/clusters-600.txt'
+        sentence_file = os.path.dirname(layer_path) + '/sentences.json'
+        annotations_file = layer_path + '/annotations.json'
     
-    if tokens:
-        save_output(tokens, labels, concept_id)
-        logging.info(f"Filtered dataset for concept ID {concept_id} ({definition}) created.")
+        # load the definitions and check for the concept id
+        definitions = load_definitions(annotations_file)
+        
+        if cluster_id in definitions:
+            definition = definitions[cluster_id]
+            logging.info(f"concept definition for {cluster_id}: {definition}")
+        else:
+            logging.error(f"error: cluster_id {cluster_id} not found in definitions.")
+            sys.exit(1)
+
+        sentences = load_sentences(sentence_file)
+        clusters = load_clusters(cluster_file)
+
+        cluster_id = cluster_id[1:]
+        tokens, labels = filter_dataset(cluster_id, clusters, sentences)
+        
+        tokens_accum.extend(tokens)
+        labels_accum.extend(labels)
+
+    if tokens_accum:
+        save_output(tokens_accum, labels_accum)
+        logging.info(f"filtered dataset for concept ids in {cluster_ids_file}")
     else:
-        logging.warning(f"No tokens found for concept_id {concept_id}")
+        logging.warning(f"no tokens found for cluster_id {cluster_id}")
 
 if __name__ == "__main__":
     main()
