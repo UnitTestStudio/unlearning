@@ -5,4 +5,5 @@ __pycache__
 venv
 warnings.log
 archive
-tcn_combined_sentences.json
+# src
+# tcn_combined_sentences.json
