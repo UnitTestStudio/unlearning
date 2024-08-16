@@ -1,6 +1,7 @@
 import json
 import logging
 import sys
+import os
 
 def setup_logging():
     """Set up logging to output messages to the console."""
@@ -10,7 +11,7 @@ def setup_logging():
 
     # Create a console handler
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)  # Set the level for the console handler
+    console_handler.setLevel(logging.INFO)  # Set the level for the console handler
 
     # Create a formatter and set it for the console handler
     console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -73,17 +74,17 @@ def filter_lists(sentences, target_words):
                 labels.append(" ".join(label_line))
 
                 filtered_sentences.append(sentence)
-                logging.info(f"Found target word '{keyword}' in sentence {i + 1} at index {index}.")
+                logging.debug(f"Found target word '{keyword}' in sentence {i + 1} at index {index}.")
 
     # Log the number of filtered sentences
     logging.info(f"Filtered {len(filtered_sentences)} sentences from {len(sentences)} total sentences.")
 
     return filtered_sentences, labels
 
-def save_output(tokens, labels):
+def save_output(tokens, labels, prefix):
     """Save tokens and labels to their respective output files."""
-    token_output_file = 'tcn-tokens.txt'
-    label_output_file = 'tcn-labels.txt'
+    token_output_file = prefix + '-tokens.txt'
+    label_output_file = prefix + '-labels.txt'
 
     if tokens and labels:
         with open(token_output_file, 'w') as f:
@@ -100,3 +101,11 @@ def save_output(tokens, labels):
 
 if __name__ == "__main__":
     setup_logging()  # Initialize logging
+    if len(sys.argv) != 4:
+        print("Usage: python tokens_labels_from_sentences.py <target_words> <sentences> <output_prefix>")
+        sys.exit(1)
+
+    sentences = load_json_file(sys.argv[2])
+    target_words = load_text_file(sys.argv[1])
+    filtered_sentences, labels = filter_lists(sentences, target_words)
+    save_output(filtered_sentences, labels, sys.argv[3])
