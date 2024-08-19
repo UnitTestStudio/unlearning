@@ -4,6 +4,7 @@ sys.path.append("..")
 from src.models.ModelTrainer import ModelTrainer
 from src.visualization.ModelAnalyzer import ModelAnalyzer
 from src.models.prune_model import prune_model
+from src import BASIC_MODEL_PATH, BASIC_ACTIVATIONS_PATH, PRUNED_MODEL_PATH, NEURONS_PER_LAYER, NUM_LAYERS,
 
 def setup_logging():
     """Set up logging to output messages to the console."""
@@ -28,18 +29,16 @@ if __name__ == "__main__":
     #     print("Usage: python tokens_labels_from_sentences.py <target_words> <sentences> <output_prefix>")
     #     sys.exit(1)
     
-    model_path = "../../gpt2-interface/gpt2/"
-    activations_path = "../data/interim/gpt-2-activations.json"
+    model_path = "openai-community/gpt2"
+    activations_path = "gpt-2-activations.json"
     basic_analyser = ModelAnalyzer(model_path, activations_path)
-
     neurons_to_prune = basic_analyser.identify_concept_neurons()
-    
+
     # If the model has been saved
     # pruned_model = get_pruned_model(pruned_model_path, model_trainer)
-    model_trainer = ModelTrainer()
-
     pruned_model_path = "models/pruned_gpt2_model"
-
+    model_trainer = ModelTrainer()
     # Ablate neurons
-    pruned_model = prune_model(model_path, model_trainer, neurons_to_prune)
+    num_prune = (NEURONS_PER_LAYER * NUM_LAYERS) // 2
+    pruned_model = prune_model(model_path, model_trainer, neurons_to_prune[-num_prune:])
     pruned_model.save_pretrained(pruned_model_path)
