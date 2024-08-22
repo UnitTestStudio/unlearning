@@ -11,3 +11,4 @@ tcn-combined-sentences.json
 models/pruned_gpt2_model/config.json
 models/pruned_gpt2_model/generation_config.json
 models/pruned_gpt2_model/pytorch_model.bin
+ablate.log

@@ -15,11 +15,11 @@ def setup_logging():
 
     # Create handlers
     console_handler = logging.StreamHandler()
-    file_handler = logging.FileHandler('warnings.log', mode='a')
+    file_handler = logging.FileHandler('unlearning.log', mode='a')
 
     # Set levels for handlers
     console_handler.setLevel(logging.INFO)
-    file_handler.setLevel(logging.WARNING)
+    file_handler.setLevel(logging.INFO)
 
     # Create formatters and add to handlers
     console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -65,4 +65,5 @@ if __name__ == "__main__":
     # Ablate neurons
     num_prune = (NEURONS_PER_LAYER * NUM_LAYERS) // 3 # this is where the percentage of nuerons to prune is set
     pruned_model = prune_model(model_path, model_trainer, neurons_to_prune[-num_prune:])
+    logging.info(f"Saving pruned model to file: {os.path.abspath('pruned_model_path')}")
     pruned_model.save_pretrained(pruned_model_path)

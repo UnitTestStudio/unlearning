@@ -49,13 +49,13 @@ class ModelAnalyzer:
 
     def identify_concept_neurons(self):
         if self.tokens is None:
-            logger.warning("Tokens are None. Loading tokens...")
             self.load_tokens()
         logger.info("Identifying concept neurons...")
         top_neurons = probeless.get_neuron_ordering_for_tag(
             self.X, self.y, self.label2idx, CONCEPT_LABEL
         )
-        logger.info("Top neurons identified: %s", top_neurons)
+        logger.debug("Top neurons: %s", top_neurons)
+        logger.info("%d top neurons identified", len(top_neurons))
         return top_neurons
 
     def show_top_words(self, concept_neurons):

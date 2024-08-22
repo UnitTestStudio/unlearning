@@ -15,7 +15,6 @@ def prune_model(model_path: str, model_trainer, neurons_to_ablate):
 
     for neuron_pos in neurons_to_ablate:
         layer_id, neuron_index = divmod(neuron_pos, NEURONS_PER_LAYER)
-        logger.debug("Pruning neuron at layer %d, index %d", layer_id, neuron_index)
 
         # FOR GPT2
         weights = model.transformer.h[layer_id - 1].ln_2.weight.data
@@ -28,7 +27,7 @@ def prune_model(model_path: str, model_trainer, neurons_to_ablate):
         # Prune the specified neuron by setting its weight to zero
         weights[neuron_index] = torch.zeros_like(weights[neuron_index])
         weights.requires_grad = False
-        logger.info("Neuron at layer %d, index %d pruned.", layer_id, neuron_index)
+        logger.debug("Neuron at layer %d, index %d pruned.", layer_id, neuron_index)
 
-    logger.info("Model pruning completed.")
+    logger.info("Model pruning completed. %d neurons ablated.", len(neurons_to_ablate))
     return model

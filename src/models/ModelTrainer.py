@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 class ModelTrainer:
     def __init__(self):
         logger.info("Initializing ModelTrainer...")
-        self.label_names = get_token_class_label_names()
-        self.id2label = {i: label for i, label in enumerate(self.label_names)}
+        # self.label_names = get_token_class_label_names()
+        # self.id2label = {i: label for i, label in enumerate(self.label_names)}
         self.label2id = {v: k for k, v in self.id2label.items()}
         self.tokenized_dataset = tokenize_token_class_dataset()
         tokenizer.pad_token = tokenizer.eos_token
         self.data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
-        logger.info("ModelTrainer initialized with label names: %s", self.label_names)
+        logger.info("ModelTrainer initialize")
 
     def train_basic_model(self):
         logger.info("Training basic model...")
@@ -135,26 +135,26 @@ class ModelTrainer:
         logger.info("Incremental retraining completed.")
         return model
 
-    def __compute_metrics(self, eval_preds):
-        logger.info("Computing metrics...")
-        logits, labels = eval_preds
-        predictions = np.argmax(logits, axis=-1)
-        metric = evaluate.load("seqeval")
-        # Remove ignored index (special tokens) and convert to labels
-        true_labels = [
-            [self.label_names[l] for l in label if l != -100] for label in labels
-        ]
-        true_predictions = [
-            [self.label_names[p] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
-        all_metrics = metric.compute(
-            predictions=true_predictions, references=true_labels
-        )
-        logger.info("Metrics computed: %s", all_metrics)
-        return {
-            "precision": all_metrics["overall_precision"],
-            "recall": all_metrics["overall_recall"],
-            "f1": all_metrics["overall_f1"],
-            "accuracy": all_metrics["overall_accuracy"],
-        }
+    # def __compute_metrics(self, eval_preds):
+    #     logger.info("Computing metrics...")
+    #     logits, labels = eval_preds
+    #     predictions = np.argmax(logits, axis=-1)
+    #     metric = evaluate.load("seqeval")
+    #     # Remove ignored index (special tokens) and convert to labels
+    #     true_labels = [
+    #         [self.label_names[l] for l in label if l != -100] for label in labels
+    #     ]
+    #     true_predictions = [
+    #         [self.label_names[p] for (p, l) in zip(prediction, label) if l != -100]
+    #         for prediction, label in zip(predictions, labels)
+    #     ]
+    #     all_metrics = metric.compute(
+    #         predictions=true_predictions, references=true_labels
+    #     )
+    #     logger.info("Metrics computed: %s", all_metrics)
+    #     return {
+    #         "precision": all_metrics["overall_precision"],
+    #         "recall": all_metrics["overall_recall"],
+    #         "f1": all_metrics["overall_f1"],
+    #         "accuracy": all_metrics["overall_accuracy"],
+    #     }
