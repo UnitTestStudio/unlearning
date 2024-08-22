@@ -18,7 +18,7 @@ class ModelTrainer:
         logger.info("Initializing ModelTrainer...")
         # self.label_names = get_token_class_label_names()
         # self.id2label = {i: label for i, label in enumerate(self.label_names)}
-        self.label2id = {v: k for k, v in self.id2label.items()}
+        # self.label2id = {v: k for k, v in self.id2label.items()}
         self.tokenized_dataset = tokenize_token_class_dataset()
         tokenizer.pad_token = tokenizer.eos_token
         self.data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)

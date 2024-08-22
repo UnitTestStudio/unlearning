@@ -65,5 +65,5 @@ if __name__ == "__main__":
     # Ablate neurons
     num_prune = (NEURONS_PER_LAYER * NUM_LAYERS) // 3 # this is where the percentage of nuerons to prune is set
     pruned_model = prune_model(model_path, model_trainer, neurons_to_prune[-num_prune:])
-    logging.info(f"Saving pruned model to file: {os.path.abspath('pruned_model_path')}")
+    logging.info(f"Saving pruned model to file: {os.path.abspath(pruned_model_path)}")
     pruned_model.save_pretrained(pruned_model_path)

@@ -2,7 +2,7 @@ from transformers import AutoTokenizer
 
 # Model specific constants
 NEURONS_PER_LAYER = 768
-NUM_LAYERS = 6 # DistilBERT, DistilGPT2
+NUM_LAYERS = 12 # FIND THIS IN THE MODEL CONFIG
 # MODEL_CHECKPOINT = "distilbert-base-cased"
 MODEL_CHECKPOINT = "gpt2"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
