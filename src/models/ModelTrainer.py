@@ -1,3 +1,4 @@
+import logging
 from transformers import DataCollatorForTokenClassification
 from transformers import AutoModelForTokenClassification
 from transformers import TrainingArguments, Trainer
@@ -9,17 +10,22 @@ from src.features.build_features import (
 import numpy as np
 import evaluate
 
+# Create a logger for this module
+logger = logging.getLogger(__name__)
 
 class ModelTrainer:
     def __init__(self):
+        logger.info("Initializing ModelTrainer...")
         self.label_names = get_token_class_label_names()
         self.id2label = {i: label for i, label in enumerate(self.label_names)}
         self.label2id = {v: k for k, v in self.id2label.items()}
         self.tokenized_dataset = tokenize_token_class_dataset()
         tokenizer.pad_token = tokenizer.eos_token
         self.data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
+        logger.info("ModelTrainer initialized with label names: %s", self.label_names)
 
     def train_basic_model(self):
+        logger.info("Training basic model...")
         model = AutoModelForTokenClassification.from_pretrained(
             MODEL_CHECKPOINT,
             id2label=self.id2label,
@@ -27,6 +33,7 @@ class ModelTrainer:
         )
 
         if tokenizer.pad_token is None:
+            logger.info("Adding pad token to tokenizer...")
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             model.resize_token_embeddings(len(tokenizer))
 
@@ -49,11 +56,13 @@ class ModelTrainer:
             tokenizer=tokenizer,
         )
 
+        logger.info("Starting training...")
         trainer.train()
+        logger.info("Training completed.")
         return model
 
-
     def retrain_pruned_model(self, pruned_model_path):
+        logger.info("Retraining pruned model from path: %s", pruned_model_path)
         model = AutoModelForTokenClassification.from_pretrained(
             pruned_model_path,
             id2label=self.id2label,
@@ -61,6 +70,7 @@ class ModelTrainer:
         )
 
         if tokenizer.pad_token is None:
+            logger.info("Adding pad token to tokenizer...")
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             model.resize_token_embeddings(len(tokenizer))
 
@@ -72,6 +82,7 @@ class ModelTrainer:
             num_train_epochs=12,
             weight_decay=0.01,
         )
+
         trainer = Trainer(
             model=model,
             args=args,
@@ -81,11 +92,14 @@ class ModelTrainer:
             compute_metrics=self.__compute_metrics,
             tokenizer=tokenizer,
         )
+
+        logger.info("Starting retraining...")
         trainer.train()
+        logger.info("Retraining completed.")
         return model
 
-
     def retrain_model_incr(self, pre_model_path):
+        logger.info("Incrementally retraining model from path: %s", pre_model_path)
         model = AutoModelForTokenClassification.from_pretrained(
             pre_model_path,
             id2label=self.id2label,
@@ -93,9 +107,10 @@ class ModelTrainer:
         )
 
         if tokenizer.pad_token is None:
+            logger.info("Adding pad token to tokenizer...")
             tokenizer.add_special_tokens({'pad_token': '[PAD]'})
             model.resize_token_embeddings(len(tokenizer))
-            
+
         args = TrainingArguments(
             "retrained_model",
             evaluation_strategy="epoch",
@@ -104,6 +119,7 @@ class ModelTrainer:
             num_train_epochs=2,
             weight_decay=0.01,
         )
+
         trainer = Trainer(
             model=model,
             args=args,
@@ -113,11 +129,14 @@ class ModelTrainer:
             compute_metrics=self.__compute_metrics,
             tokenizer=tokenizer,
         )
+
+        logger.info("Starting incremental retraining...")
         trainer.train()
+        logger.info("Incremental retraining completed.")
         return model
 
-
     def __compute_metrics(self, eval_preds):
+        logger.info("Computing metrics...")
         logits, labels = eval_preds
         predictions = np.argmax(logits, axis=-1)
         metric = evaluate.load("seqeval")
@@ -132,6 +151,7 @@ class ModelTrainer:
         all_metrics = metric.compute(
             predictions=true_predictions, references=true_labels
         )
+        logger.info("Metrics computed: %s", all_metrics)
         return {
             "precision": all_metrics["overall_precision"],
             "recall": all_metrics["overall_recall"],

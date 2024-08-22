@@ -1,33 +1,57 @@
 import sys
+import os
 import logging
+import datetime as d
 sys.path.append("..")
 from src.models.ModelTrainer import ModelTrainer
 from src.visualization.ModelAnalyzer import ModelAnalyzer
 from src.models.prune_model import prune_model
-from src import BASIC_MODEL_PATH, BASIC_ACTIVATIONS_PATH, PRUNED_MODEL_PATH, NEURONS_PER_LAYER, NUM_LAYERS,
+from src import NEURONS_PER_LAYER, NUM_LAYERS
 
 def setup_logging():
-    """Set up logging to output messages to the console."""
     # Create a logger
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)  # Set the logging level
+    logger.setLevel(logging.DEBUG)
 
-    # Create a console handler
+    # Create handlers
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)  # Set the level for the console handler
+    file_handler = logging.FileHandler('warnings.log', mode='a')
 
-    # Create a formatter and set it for the console handler
+    # Set levels for handlers
+    console_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.WARNING)
+
+    # Create formatters and add to handlers
     console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_format = logging.Formatter('%(message)s')  # Simplified format for file
     console_handler.setFormatter(console_format)
+    file_handler.setFormatter(file_format)
 
-    # Add the console handler to the logger
+    # Filter to print INFO messages to console
+    class InfoFilter(logging.Filter):
+        def filter(self, record):
+            return record.levelno == logging.INFO
+
+    # Add filter to console handler
+    console_handler.addFilter(InfoFilter())
+
+    # Add handlers to the logger
     logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+    # Add a timestamped heading to the log file
+    timestamp = d.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    file_handler.emit(logging.LogRecord(
+        name='', level=logging.WARNING,
+        pathname='', lineno=0,
+        msg=f"\n\n{'='*50}\nScript Run: {timestamp}\n{'='*50}\n",
+        args=(), exc_info=None
+    ))
+
+    logging.info(f"Logging warnings and errors to file: {os.path.abspath('warnings.log')}")
 
 if __name__ == "__main__":
     setup_logging()  # Initialize logging
-    # if len(sys.argv) != 4:
-    #     print("Usage: python tokens_labels_from_sentences.py <target_words> <sentences> <output_prefix>")
-    #     sys.exit(1)
     
     model_path = "openai-community/gpt2"
     activations_path = "gpt-2-activations.json"
@@ -39,6 +63,6 @@ if __name__ == "__main__":
     pruned_model_path = "models/pruned_gpt2_model"
     model_trainer = ModelTrainer()
     # Ablate neurons
-    num_prune = (NEURONS_PER_LAYER * NUM_LAYERS) // 2
+    num_prune = (NEURONS_PER_LAYER * NUM_LAYERS) // 3 # this is where the percentage of nuerons to prune is set
     pruned_model = prune_model(model_path, model_trainer, neurons_to_prune[-num_prune:])
     pruned_model.save_pretrained(pruned_model_path)
