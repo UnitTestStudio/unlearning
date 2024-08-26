@@ -61,9 +61,8 @@ if __name__ == "__main__":
     # If the model has been saved
     # pruned_model = get_pruned_model(pruned_model_path, model_trainer)
     pruned_model_path = "models/pruned_gpt2_model"
-    model_trainer = ModelTrainer()
     # Ablate neurons
     num_prune = (NEURONS_PER_LAYER * NUM_LAYERS) // 3 # this is where the percentage of nuerons to prune is set
-    pruned_model = prune_model(model_path, model_trainer, neurons_to_prune[-num_prune:])
+    pruned_model = prune_model(model_path, neurons_to_prune[-num_prune:])
     logging.info(f"Saving pruned model to file: {os.path.abspath(pruned_model_path)}")
     pruned_model.save_pretrained(pruned_model_path)

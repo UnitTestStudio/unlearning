@@ -6,7 +6,7 @@ import torch
 # Create a logger for this module
 logger = logging.getLogger(__name__)
 
-def prune_model(model_path: str, model_trainer, neurons_to_ablate):
+def prune_model(model_path: str, neurons_to_ablate):
     logger.info("Pruning model from path: %s", model_path)
     
     # Load the GPT-2 model
