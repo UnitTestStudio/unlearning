@@ -63,6 +63,6 @@ if __name__ == "__main__":
         logging.info(f"Pruned model exists at {PRUNED_MODEL_PATH}.")
     else:
         # Ablate neurons
-        pruned_model = prune_model(MODEL_PATH, neurons_to_prune[-NUMBER_TO_PRUNE:])
+        pruned_model = prune_model(MODEL_PATH, neurons_to_ablate=neurons_to_prune[-NUMBER_TO_PRUNE:])
         logging.info(f"Saving pruned model to file: {os.path.abspath(PRUNED_MODEL_PATH)}")
         pruned_model.save_pretrained(PRUNED_MODEL_PATH)
