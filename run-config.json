@@ -1,0 +1,8 @@
+{
+    "model_path": "openai-community/gpt2",
+    "model_checkpoint": "gpt2",
+    "dataset_size": "2k",
+    "neurons_per_layer": 768,
+    "num_layers": 12,
+    "prune_ratio": 0.5
+}
