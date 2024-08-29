@@ -55,14 +55,14 @@ if __name__ == "__main__":
     basic_analyser = ModelAnalyzer(MODEL_PATH, ACTIVATIONS_PATH)
     neurons_to_prune = basic_analyser.identify_concept_neurons()
 
-# Check if the pruned model file exists
-if os.path.exists(PRUNED_MODEL_PATH):
-    # If the file exists, load the pruned model
-    model_trainer = ModelTrainer()
-    # pruned_model = get_pruned_model(PRUNED_MODEL_PATH, model_trainer)
-    logging.info(f"Pruned model exists at {PRUNED_MODEL_PATH}.")
-else:
-    # Ablate neurons
-    pruned_model = prune_model(MODEL_PATH, neurons_to_prune[-NUMBER_TO_PRUNE:])
-    logging.info(f"Saving pruned model to file: {os.path.abspath(PRUNED_MODEL_PATH)}")
-    pruned_model.save_pretrained(PRUNED_MODEL_PATH)
+    # Check if the pruned model file exists
+    if os.path.exists(PRUNED_MODEL_PATH):
+        # If the file exists, load the pruned model
+        model_trainer = ModelTrainer()
+        # pruned_model = get_pruned_model(PRUNED_MODEL_PATH, model_trainer)
+        logging.info(f"Pruned model exists at {PRUNED_MODEL_PATH}.")
+    else:
+        # Ablate neurons
+        pruned_model = prune_model(MODEL_PATH, neurons_to_prune[-NUMBER_TO_PRUNE:])
+        logging.info(f"Saving pruned model to file: {os.path.abspath(PRUNED_MODEL_PATH)}")
+        pruned_model.save_pretrained(PRUNED_MODEL_PATH)
