@@ -8,7 +8,7 @@ sys.path.append("..")
 from src.models.ModelTrainer import ModelTrainer
 from src.visualization.ModelAnalyzer import ModelAnalyzer
 from src.models.prune_model import prune_model
-from src import ACTIVATIONS_PATH, MODEL_PATH, NUMBER_TO_PRUNE, PRUNED_MODEL_PATH, MODEL_NAME
+from src import ACTIVATIONS_PATH, MODEL_PATH, NUMBER_TO_PRUNE, PRUNED_MODEL_PATH, MODEL_NAME, RETRAINED_MODEL_PATH
 from transformers import GPT2LMHeadModel, GPTNeoForCausalLM, GPT2Tokenizer
 
 def setup_logging():
@@ -78,14 +78,12 @@ def generate_text_with_prompt(model, prompt, temperature=0.7, seed=42):
 
 if __name__ == "__main__":
     setup_logging()  # Initialize logging
+    # Load configuration from config.json
+    with open('run-config.json', 'r') as config_file:
+        config = json.load(config_file)
 
     # Check if the pruned model file exists
-    if os.path.exists(PRUNED_MODEL_PATH):
-        # If the file exists, load the pruned model
-        # model_trainer = ModelTrainer()
-        # pruned_model = get_pruned_model(PRUNED_MODEL_PATH, model_trainer)
-        logging.info(f"Pruned model exists at {PRUNED_MODEL_PATH}.")
-    else:
+    if not os.path.exists(PRUNED_MODEL_PATH):
         # Ablate neurons
         basic_analyser = ModelAnalyzer(MODEL_PATH, ACTIVATIONS_PATH)
         neurons_to_prune = basic_analyser.identify_concept_neurons()
@@ -93,17 +91,27 @@ if __name__ == "__main__":
         logging.info(f"Saving pruned model to file: {os.path.abspath(PRUNED_MODEL_PATH)}")
         pruned_model.save_pretrained(PRUNED_MODEL_PATH)
         
+    # if MODEL_NAME == "gpt-neo-1.3B":
+    #     model = GPTNeoForCausalLM.from_pretrained(PRUNED_MODEL_PATH)
+    #     logging.info("Loaded GPT-NEO model successfully.")
+    # else:
+    #     model = GPT2LMHeadModel.from_pretrained(PRUNED_MODEL_PATH)
+    #     logging.info("Loaded GPT-2 model successfully.")
+
+    # for prompt in config["test_prompts"]:
+    #     logging.info(f"Prompt: {prompt}")
+    #     generated_text = generate_text_with_prompt(model, prompt, 0.6)
+
+    model_trainier = ModelTrainer()
+    retrained_model = model_trainier.retrain_pruned_model(PRUNED_MODEL_PATH)
+    retrained_model.save_pretrained(RETRAINED_MODEL_PATH)
+
     if MODEL_NAME == "gpt-neo-1.3B":
-        model = GPTNeoForCausalLM.from_pretrained(PRUNED_MODEL_PATH)
+        model = GPTNeoForCausalLM.from_pretrained(RETRAINED_MODEL_PATH)
         logging.info("Loaded GPT-NEO model successfully.")
     else:
-        model = GPT2LMHeadModel.from_pretrained(PRUNED_MODEL_PATH)
+        model = GPT2LMHeadModel.from_pretrained(RETRAINED_MODEL_PATH)
         logging.info("Loaded GPT-2 model successfully.")
-
-
-    # Load configuration from config.json
-    with open('run-config.json', 'r') as config_file:
-        config = json.load(config_file)
 
     for prompt in config["test_prompts"]:
         logging.info(f"Prompt: {prompt}")
