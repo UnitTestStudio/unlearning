@@ -4,10 +4,12 @@ venv
 tcn
 tcn.zip
 models
-archive
 activations
 ablate.log
 run-config.json
 gpt-neo-1.3B-2k-activations.json
 data/tcn-combined-sentences.json
 models-archive
+archive
+test-script.py
+data/tcn-combined-inverse.txt

@@ -5,7 +5,7 @@ import torch
 import json
 import datetime as d
 sys.path.append("..")
-# from src.models.ModelTrainer import ModelTrainer
+from src.models.ModelTrainer import ModelTrainer
 from src.visualization.ModelAnalyzer import ModelAnalyzer
 from src.models.prune_model import prune_model
 from src import ACTIVATIONS_PATH, MODEL_PATH, NUMBER_TO_PRUNE, PRUNED_MODEL_PATH, MODEL_NAME

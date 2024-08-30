@@ -1,12 +1,11 @@
 import logging
-from transformers import DataCollatorForTokenClassification
-from transformers import AutoModelForTokenClassification
+from transformers import GPT2LMHeadModel, GPTNeoForCausalLM, GPT2Tokenizer
 from transformers import TrainingArguments, Trainer
 from src import tokenizer, MODEL_CHECKPOINT
-from src.features.build_features import (
-    get_token_class_label_names,
-    tokenize_token_class_dataset,
-)
+# from src.features.build_features import (
+#     get_token_class_label_names,
+#     tokenize_token_class_dataset,
+# )
 import numpy as np
 import evaluate
 
