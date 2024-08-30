@@ -1,8 +1,14 @@
 {
-    "model_path": "openai-community/gpt2",
-    "model_checkpoint": "gpt2",
+    "model_path": "EleutherAI/gpt-neo-1.3B",
+    "model_checkpoint": "EleutherAI/gpt-neo-1.3B",
     "dataset_size": "2k",
-    "neurons_per_layer": 768,
-    "num_layers": 12,
-    "prune_ratio": 0.5
+    "neurons_per_layer": 2048,
+    "num_layers": 24,
+    "prune_ratio": 0.003125,
+    "test_prompts": [
+        "Paris is the capital city of",
+        "I'm tired, I think I'll rest on this",
+        "Q: What is a chair? A:",
+        "Q: What is a poticam? A:"
+    ]
 }
