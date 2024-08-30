@@ -56,6 +56,7 @@ def filter_lists(sentences, target_words):
     """Filter the tokens based on target words and return their indices in the word lists."""
     filtered_sentences = []  # List to hold filtered sentences
     labels = []  # List to hold labels of target words in the current sentence
+    inverse_sentences = []  # List to hold sentences without any target words
 
     # Iterate over each sentence and its index
     for i, sentence in enumerate(sentences):
@@ -64,9 +65,11 @@ def filter_lists(sentences, target_words):
         # Split the sentence into words
         words = sentence.split(" ")
 
-        # Check for each target word in the list of words
+        # Check for any target word in the list of words
+        found_target = False
         for keyword in target_words:
             if keyword in words:
+                found_target = True
                 # Get the index of the first occurrence of the keyword
                 index = words.index(keyword)
                 label_line = ["N/A"] * len(words)
@@ -75,16 +78,23 @@ def filter_lists(sentences, target_words):
 
                 filtered_sentences.append(sentence)
                 logging.debug(f"Found target word '{keyword}' in sentence {i + 1} at index {index}.")
+                break  # No need to check other keywords if one is found
+
+        # If no target word was found, add to inverse sentences
+        if not found_target:
+            inverse_sentences.append(sentence)
 
     # Log the number of filtered sentences
     logging.info(f"Filtered {len(filtered_sentences)} sentences from {len(sentences)} total sentences.")
+    logging.info(f"Collected {len(inverse_sentences)} sentences without any target words.")
 
-    return filtered_sentences, labels
+    return filtered_sentences, labels, inverse_sentences
 
-def save_output(tokens, labels, prefix):
+def save_output(tokens, labels, inverse_tokens, prefix):
     """Save tokens and labels to their respective output files."""
     token_output_file = prefix + '-tokens.txt'
     label_output_file = prefix + '-labels.txt'
+    inverse_output_file = prefix + '-inverse.txt'  # New output file for inverse sentences
 
     if tokens and labels:
         with open(token_output_file, 'w') as f:
@@ -99,6 +109,12 @@ def save_output(tokens, labels, prefix):
     else:
         logging.warning(f"No data to save")
 
+    # Save the inverse sentences if available
+    if inverse_tokens:
+        with open(inverse_output_file, 'w') as f:
+            f.write('\n'.join(inverse_tokens) + '\n')
+        logging.info(f"Inverse sentences file created at: {os.path.abspath(inverse_output_file)}")
+
 if __name__ == "__main__":
     setup_logging()  # Initialize logging
     if len(sys.argv) != 4:
@@ -107,5 +123,5 @@ if __name__ == "__main__":
 
     sentences = load_json_file(sys.argv[2])
     target_words = load_text_file(sys.argv[1])
-    filtered_sentences, labels = filter_lists(sentences, target_words)
-    save_output(filtered_sentences, labels, sys.argv[3])
+    filtered_sentences, labels, inverse_sentences = filter_lists(sentences, target_words)
+    save_output(filtered_sentences, labels, inverse_sentences, sys.argv[3])
