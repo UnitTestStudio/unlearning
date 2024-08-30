@@ -13,13 +13,13 @@ MODEL_PATH = config['model_path']
 MODEL_CHECKPOINT = config['model_checkpoint']
 DATASET_SIZE = config['dataset_size']
 MODEL_NAME = MODEL_PATH.split('/')[1]
-ACTIVATIONS_PATH = f"{MODEL_NAME}-{DATASET_SIZE}-activations.json"
-PRUNED_MODEL_PATH = f"models/pruned-{MODEL_NAME}-{DATASET_SIZE}-model"
+ACTIVATIONS_PATH = f"activations/{MODEL_NAME}-{DATASET_SIZE}-activations.json"
 NEURONS_PER_LAYER = config['neurons_per_layer']
 NUM_LAYERS = config['num_layers']
 PRUNE_RATIO = config['prune_ratio']
+PRUNED_MODEL_PATH = f"models/pruned-{MODEL_NAME}-{DATASET_SIZE}-{PRUNE_RATIO}"
 NUMBER_TO_PRUNE = round((NEURONS_PER_LAYER * NUM_LAYERS) * PRUNE_RATIO)
-tokenizer = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
+# tokenizer = AutoTokenizer.from_pretrained(MODEL_CHECKPOINT)
 
 # Dataset paths
 if DATASET_SIZE == "6k":
@@ -31,7 +31,6 @@ else:
 
 # Output paths (you can define these as needed)
 BASIC_MODEL_PATH = "models/basic_model"
-PRUNED_MODEL_PATH = "models/pruned_model"
 RETRAINED_MODEL_PATH = "models/retrained_model"
 
 # Concept label (if needed, you can define it here)

@@ -54,7 +54,7 @@ class ModelAnalyzer:
         top_neurons = probeless.get_neuron_ordering_for_tag(
             self.X, self.y, self.label2idx, CONCEPT_LABEL
         )
-        logger.debug("Top neurons: %s", top_neurons)
+        logger.debug("Top neurons: %s", top_neurons[:10])
         logger.info("%d top neurons identified", len(top_neurons))
         return top_neurons
 
