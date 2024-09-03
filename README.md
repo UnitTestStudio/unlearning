@@ -1,6 +1,6 @@
-# LLM Pruning and Retraining
+# LLM Unlearning
 
-This project provides a framework for analyzing, pruning, and retraining neural network models in a model-agnostic manner. It allows users to identify important neurons associated with specific concepts, prune less relevant neurons, and retrain the model using custom datasets. The application is designed to be extensible and maintainable, following best practices in Python software development.
+This software analyses, ablates, and retrains a target large language model, effectively "unlearning" a given concept in the target model. It allows users to identify important neurons associated with the target concepts, prune the most salient neurons, and retrain the model using custom datasets.
 
 ## Table of Contents
 
@@ -18,25 +18,23 @@ This project provides a framework for analyzing, pruning, and retraining neural 
 ## Features
 
 -  Load pretrained models from various sources (e.g., Hugging Face).
--  Identify and rank neurons based on their relevance to specified concepts.
--  Prune neurons to reduce model complexity.
--  Retrain the model with a custom dataset.
+-  Identify and rank neurons based on their relevance to the target concept.
+-  Prune neurons to remove the concept.
+-  Retrain the model with a custom dataset to regain performance.
 -  Log all operations and configuration parameters for reproducibility.
 
 ## Requirements
 
--  Python 3.8 or higher
+-  Python 3.10.10
 -  Required libraries:
   - torch (for model handling)
   - transformers (for loading models)
-  - numpy (for numerical operations)
-  - pandas (for dataset handling)
-  - json (for configuration management)
+  - NeuroX (for model analysis)
 
 You can install the required libraries using pip:
 
 ```bash
-pip install torch transformers numpy pandas
+pip install -r requirements.txt
 ```
 
 ## Installation
@@ -44,8 +42,8 @@ pip install torch transformers numpy pandas
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/my_ml_project.git
-   cd my_ml_project
+   git clone https://github.com/UnitTestStudio/unlearning/
+   cd unlearning
    ```
 
 2. Install the required libraries as mentioned above.
@@ -56,20 +54,23 @@ The application uses a JSON configuration file located in the config directory. 
 
 ```json
 {
-    "model_path": "openai/gpt-2",
-    "model_checkpoint": "openai/gpt-2",
-    "model_type": "gpt2",
-    "dataset_size": "2k",
-    "neurons_per_layer": 2048,
-    "num_layers": 24,
-    "prune_ratio": 0.2,
+    "base_model_path": "<target/base-model-path can be huggging face repo>",
+    "model_checkpoint": "<target/base-model-path-checkpoint>",
+    "model_type": "<model type e.g gpt2>",
+    "train_dataset_path": "<path to retraining data>", 
+    "val_dataset_path": "<path to retraining data>",
+    "activations_dataset_size": "<activations_dataset_size>",
+    "neurons_per_layer": "<neurons_per_layer>",
+    "num_layers": "<number of layers>",
+    "prune_ratio": "<percentage of neurons to prune>",
+    "target_label": "<label specified in the annotation dataset lablels>",
     "test_prompts": [
-        "Paris is the capital city of",
-        "I'm tired, I think I'll rest on this",
-        "Q: What is a chair? A:",
-        "Q: What is a poticam? A:"
+        "A list",
+        "of prompts",
+        "to test the models with...",
     ]
 }
+
 ```
 
 ### Parameters
@@ -86,27 +87,22 @@ The application uses a JSON configuration file located in the config directory. 
 ## Directory Structure
 
 ```
-my_ml_project/
+unlearning/
 │
-├── config/                     # Configuration files
-│   └── config.json             # Main configuration file
-│
-├── data/                       # Data files (datasets, activations)
-│   └── dataset.csv             # Example dataset
-│
-├── logs/                       # Log files
-│   └── app.log                 # Application log file
-│
-├── src/                        # Source code
-│   ├── __init__.py             # Makes src a package
-│   ├── logger.py                # Logging setup
-│   ├── config_loader.py         # Configuration loading logic
-│   ├── model_handler.py         # Model loading, saving, and pruning logic
-│   ├── neuron_identifier.py     # Logic for identifying concept neurons
-│   ├── retrainer.py             # Logic for retraining the model
-│   ├── tester.py                # Logic for testing the model
-│
-└── main.py                     # Entry point for the application
+├── config.json
+├── data
+│   ├── activations
+│   ├── ...
+├── models
+│   └── ...
+├── logs/                       
+│   └── app.log                 
+├── src
+│   ├── config_loader.py
+│   ├── logger.py
+│   ├── model_handler.py
+│   └── tester.py
+└── main.py     
 ```
 
 ## Usage
@@ -114,6 +110,7 @@ my_ml_project/
 To run the application, execute the following command in your terminal:
 
 ```bash
+source venv/bin/activate
 python main.py
 ```
 
@@ -122,21 +119,3 @@ The application will log all operations and configuration parameters to logs/app
 ## Logging
 
 The application uses Python's built-in logging module to log information about the operations performed. All configuration parameters and actions are logged for reproducibility. The log file is located in the logs directory.
-
-## Testing
-
-Unit tests can be added in the tests directory. Ensure that you write tests for each module to verify the functionality of the application. You can use the unittest framework or any other testing framework of your choice.
-
-## Contributing
-
-Contributions are welcome! If you have suggestions for improvements or new features, please open an issue or submit a pull request.
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature/YourFeature`).
-3. Make your changes and commit them (`git commit -m 'Add some feature'`).
-4. Push to the branch (`git push origin feature/YourFeature`).
-5. Open a pull request.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
