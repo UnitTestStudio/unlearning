@@ -5,3 +5,4 @@ data
 logs
 src/__pycache__
 config.json
+.python-version

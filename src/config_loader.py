@@ -2,12 +2,12 @@ import json
 
 def generate_activations_file_path(config):
     model_name = config["base_model_path"].replace("/", "-")
-    dataset_size = config["dataset_size"]
+    dataset_size = config["activations_dataset_size"]
     return f"data/activations/{model_name}_{dataset_size}_activations.json"
 
 def generate_model_path(config, model_type):
     model_name = config["base_model_path"].replace("/", "-")
-    dataset_size = config["dataset_size"]
+    dataset_size = config["activations_dataset_size"]
     prune_ratio = str(int(config["prune_ratio"] * 100)).zfill(2)  # Convert to percentage and pad with zeros
     return f"models/{model_name}_{dataset_size}_{prune_ratio}_{model_type}"
 
@@ -29,6 +29,5 @@ def load_config(config_path='config.json'):
     config['pruned_model_path'] = generate_model_path(config, "pruned")
     config['retrained_model_path'] = generate_model_path(config, "retrained")
     config['tokens_input_path'], config['labels_input_path'] = generate_dataset_path(config)
-    config['number_to_prune'] = round((config['neurons_per_layer'] * config['num_layers']) * config['prune_ratio'])
     
     return config

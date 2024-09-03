@@ -51,6 +51,7 @@ class ModelTrainer:
         self.config = config
         self.activations = activations
         self.model = None
+        self.tokenizer = None
         self.tokens = None
         self.top_neurons = None
         self.X = None
@@ -90,8 +91,9 @@ class ModelTrainer:
         logging.info("Pruning model from path: %s", self.config['base_model_path'])
         self.model, self.tokenizer = load_model(self.config['base_model_path'], self.config['model_type'])
         self.identify_concept_neurons()
+        max_no_neurons_to_prune = round((self.config['neurons_per_layer'] * self.config['num_layers']) * self.config['prune_ratio'])
 
-        for neuron_pos in self.top_neurons[-self.config['number_to_prune']:]
+        for neuron_pos in self.top_neurons[-max_no_neurons_to_prune:]:
             layer_id, neuron_index = divmod(neuron_pos, (self.config['neurons_per_layer']))
             weights = self.model.transformer.h[layer_id - 1].ln_2.weight.data
 
@@ -150,17 +152,17 @@ class ModelTrainer:
 
     def retrain(self):
         logging.info("Retraining pruned model from path: %s", self.config['pruned_model_path'])
-        if self.tokenizer = None:
+        if self.tokenizer == None:
             self.model, self.tokenizer = load_model(self.config['pruned_model_path'], self.config['model_type'])
-
+        self.tokenizer.pad_token = self.tokenizer.eos_token
         self.model.resize_token_embeddings(len(self.tokenizer))
         logging.info("Pad token added and model token embeddings resized.")
 
         self.dataset = self.load_datasets(self.config['train_dataset_path'], self.config['val_dataset_path'])
-        self.tokenized_dataset = self.tokenize_dataset()
+        self.tokenize_dataset()
         self.data_collator = DataCollatorForLanguageModeling(
             tokenizer=self.tokenizer,
-            mlm=False  # Set to False for causal language modeling
+            mlm=False
         )
 
         args = TrainingArguments(
@@ -185,6 +187,5 @@ class ModelTrainer:
         )
         logging.info("Trainer initialized successfully.")
 
-        logging.info("Starting retraining...")
         trainer.train()
         logging.info("Retraining completed successfully.")
