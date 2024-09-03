@@ -13,3 +13,16 @@ models-archive
 archive
 test-script.py
 data/tcn-combined-inverse.txt
+data/filtered_train_oasst2/data-00000-of-00001.arrow
+data/filtered_train_oasst2/dataset_info.json
+data/filtered_train_oasst2/state.json
+data/filtered_val_oasst2/data-00000-of-00001.arrow
+data/filtered_val_oasst2/dataset_info.json
+data/filtered_val_oasst2/state.json
+data/filtered_train_oasst2/cache-68cd8cbe4bdce821.arrow
+data/filtered_train_oasst2/cache-debac1987944be85.arrow
+data/filtered_train_oasst2/cache-ef91cbd70376df7d.arrow
+data/filtered_val_oasst2/cache-34da88f56a3c9e86.arrow
+data/filtered_val_oasst2/cache-50e025f34ea9a1bc.arrow
+data/filtered_val_oasst2/cache-82a46ba9b4ad6fca.arrow
+data/filtered_val_oasst2/cache-981fa2f54a31baee.arrow

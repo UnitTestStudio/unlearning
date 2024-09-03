@@ -102,7 +102,7 @@ if __name__ == "__main__":
     #     logging.info(f"Prompt: {prompt}")
     #     generated_text = generate_text_with_prompt(model, prompt, 0.6)
 
-    model_trainier = ModelTrainer()
+    model_trainier = ModelTrainer(train_dataset_path="data/filtered_train_oasst2", val_dataset_path="data/filtered_val_oasst2")
     retrained_model = model_trainier.retrain_pruned_model(PRUNED_MODEL_PATH)
     retrained_model.save_pretrained(RETRAINED_MODEL_PATH)
 

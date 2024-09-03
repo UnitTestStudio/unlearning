@@ -1,85 +1,98 @@
-from transformers import GPTNeoForCausalLM, GPT2Tokenizer, TrainingArguments, Trainer
-from sklearn.model_selection import train_test_split
-from src import tokenizer, RETRAIN_DATASET_PATH
+from transformers import GPTNeoForCausalLM, AutoTokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling
+from datasets import load_from_disk, DatasetDict, load_dataset
 import logging
 
 # Create a logger for this module
 logger = logging.getLogger(__name__)
 
 class ModelTrainer:
-    def __init__(self):
+    def __init__(self, train_dataset_path, val_dataset_path):
         logger.info("Initializing ModelTrainer...")
+        
+        # Define the tokenizer as an instance variable
+        self.tokenizer = AutoTokenizer.from_pretrained('gpt2')
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        # Load the datasets
+        self.dataset = self.load_datasets(train_dataset_path, val_dataset_path)
+        print(self.dataset)
+
+        # Tokenize the dataset 
         self.tokenized_dataset = self.tokenize_dataset()
+        print(self.tokenized_dataset)
+
+    
         logger.info("ModelTrainer initialized successfully.")
 
-    def tokenize_dataset(self, test_size=0.2, max_length=None):
+        # Initialize the data collator
+        self.data_collator = DataCollatorForLanguageModeling(
+            tokenizer=self.tokenizer,
+            mlm=False  # Set to False for causal language modeling
+        )
+
+    def load_datasets(self, train_dataset_path, val_dataset_path):
         """
-        Tokenizes sentences from a text file using the GPT-2 tokenizer and splits them into training and validation sets.
+        Load and return the training and validation datasets.
 
         Args:
-            test_size (float): Proportion of the dataset to include in the validation split (default is 0.2).
+            train_dataset_path (str): Path to the training dataset.
+            val_dataset_path (str): Path to the validation dataset.
+
+        Returns:
+            DatasetDict: A dictionary containing 'train' and 'validation' datasets.
+        """
+        logger.info("Loading training dataset from path: %s", train_dataset_path)
+        try:
+            train_dataset = load_from_disk(train_dataset_path)
+            logger.info("Successfully loaded training dataset with %d samples.", len(train_dataset))
+        except Exception as e:
+            logger.error("Error loading training dataset: %s", e)
+            raise
+
+        logger.info("Loading validation dataset from path: %s", val_dataset_path)
+        try:
+            val_dataset = load_from_disk(val_dataset_path)
+            logger.info("Successfully loaded validation dataset with %d samples.", len(val_dataset))
+        except Exception as e:
+            logger.error("Error loading validation dataset: %s", e)
+            raise
+
+        return DatasetDict({
+            'train': train_dataset,
+            'validation': val_dataset
+        })
+
+    def tokenize_dataset(self, max_length=1024):
+        """
+        Tokenizes the loaded datasets.
+
+        Args:
             max_length (int, optional): Maximum length of the tokenized sequences. 
                                         If None, uses the default max length of the tokenizer.
 
         Returns:
-            dict: A dictionary containing 'train' and 'validation' datasets with 'input_ids' and 'attention_mask' tensors.
+            DatasetDict: A dictionary containing 'train' and 'validation' datasets with 'input_ids' and 'attention_mask' tensors.
         """
-        logger.info("Loading sentences from dataset...")
-        try:
-            with open(RETRAIN_DATASET_PATH, 'r', encoding='utf-8') as file:
-                sentences = file.readlines()
-            logger.info("Successfully loaded %d sentences.", len(sentences))
-        except Exception as e:
-            logger.error("Error loading dataset: %s", e)
-            raise
+        logger.info("Tokenizing datasets...")
 
-        # Remove any leading/trailing whitespace characters (like newlines)
-        sentences = [sentence.strip() for sentence in sentences if sentence.strip()]
-        logger.info("Filtered sentences. Remaining count: %d", len(sentences))
+        # Define the tokenization function
+        def tokenize_function(examples):
+            return self.tokenizer(
+            examples["text"],  # Use the 'text' column for tokenization
+            padding=False,  # Do not pad here; the DataCollator will handle it
+            truncation=True,  # Enable truncation
+            max_length=max_length  # Set max_length to prevent exceeding model limits
+            )
 
-        # Step 2: Split the dataset into training and validation sets
-        logger.info("Splitting dataset into training and validation sets...")
-        train_sentences, val_sentences = train_test_split(sentences, test_size=test_size, random_state=42)
-        logger.info("Split completed. Training set size: %d, Validation set size: %d", len(train_sentences), len(val_sentences))
-
-        if tokenizer.pad_token is None:
-            logger.info("Adding pad token to tokenizer...")
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            
-        # Step 4: Tokenize the training and validation sentences
-        logger.info("Tokenizing training sentences...")
-        tokenized_train = tokenizer(
-            train_sentences,
-            padding=True,
-            truncation=True,
-            max_length=max_length,
-            return_tensors='pt'  # Return as PyTorch tensors
+        # Apply the tokenization function to the entire dataset
+        tokenized_dataset = self.dataset.map(
+            tokenize_function,
+            batched=True,
+            batch_size=10,
+            remove_columns=self.dataset["train"].column_names  # Remove original columns
         )
-        logger.info("Tokenization of training sentences completed. Tokenized count: %d", tokenized_train['input_ids'].size(0))
 
-        logger.info("Tokenizing validation sentences...")
-        tokenized_val = tokenizer(
-            val_sentences,
-            padding=True,
-            truncation=True,
-            max_length=max_length,
-            return_tensors='pt'  # Return as PyTorch tensors
-        )
-        logger.info("Tokenization of validation sentences completed. Tokenized count: %d", tokenized_val['input_ids'].size(0))
-
-        # Step 5: Create a dataset dictionary
-        tokenized_dataset = {
-            'train': {
-                'input_ids': tokenized_train['input_ids'],
-                'attention_mask': tokenized_train['attention_mask']
-            },
-            'validation': {
-                'input_ids': tokenized_val['input_ids'],
-                'attention_mask': tokenized_val['attention_mask']
-            }
-        }
-
-        logger.info("Tokenized dataset created successfully.")
+        logger.info("Tokenization completed successfully.")
         return tokenized_dataset
 
     def retrain_pruned_model(self, pruned_model_path):
@@ -91,7 +104,7 @@ class ModelTrainer:
             logger.error("Error loading model: %s", e)
             raise
 
-        model.resize_token_embeddings(len(tokenizer))
+        model.resize_token_embeddings(len(self.tokenizer))
         logger.info("Pad token added and model token embeddings resized.")
 
         args = TrainingArguments(
@@ -101,15 +114,18 @@ class ModelTrainer:
             learning_rate=2e-5,
             num_train_epochs=12,
             weight_decay=0.01,
+            per_device_train_batch_size=4,
+            per_device_eval_batch_size=4,
         )
 
         logger.info("Initializing Trainer...")
         trainer = Trainer(
             model=model,
+            tokenizer=self.tokenizer,
             args=args,
+            data_collator=self.data_collator,  # Use the data collator here
             train_dataset=self.tokenized_dataset["train"],
             eval_dataset=self.tokenized_dataset["validation"],
-            tokenizer=tokenizer,
         )
         logger.info("Trainer initialized successfully.")
 
