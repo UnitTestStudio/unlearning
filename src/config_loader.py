@@ -19,6 +19,6 @@ def load_config(config_path='config.json'):
     config["neural_probing"]['activations_file_path'] = generate_activations_file_path(config)
     config["neural_probing"]['pruned_model_path'] = generate_model_path(config, "pruned")
     config["retraining"]['retrained_model_path'] = generate_model_path(config, "retrained")
-    config["retraining"]["train_dataset_path"] = "data/filtered_train", 
+    config["retraining"]["train_dataset_path"] = "data/filtered_train"
     config["retraining"]["val_dataset_path"] =  "data/filtered_val"
     return config
