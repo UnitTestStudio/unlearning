@@ -49,11 +49,11 @@ class ModelAnalyzer:
         Returns:
             activations: The loaded activations data.
         """
-        model_path_type = self.config['base_model']['base_model_path'] + ',' + self.config['base_model']['model_type']
         if not os.path.exists(self.config['neural_probing']['activations_file_path']):
             logging.info('Activations path does not exist. Extracting representations...')
             transformers_extractor.extract_representations(
-                model_path_type, self.config['neural_probing']['tokens_input_path'], 
+                self.config['base_model']['base_model_path'], 
+                self.config['neural_probing']['tokens_input_path'], 
                 self.config['neural_probing']['activations_file_path'], 
                 aggregation='average'
             )
