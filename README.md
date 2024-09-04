@@ -35,6 +35,8 @@ If using, set the python version using PyEnv, then create a virtual environment 
 pyenv local 3.10.10
 python -m venv venv
 source venv/bin/activate
+# compatability issue with tqdm install NeuroX first
+pip install git+https://github.com/mee-kell/NeuroX@344f2cd1f45a73c39923eaa88d2caf68baa31c0e
 pip install -r requirements.txt
 ```
 

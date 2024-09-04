@@ -29,7 +29,6 @@ mpmath==1.3.0
 multidict==6.0.5
 multiprocess==0.70.16
 networkx==3.3
-neurox @ git+https://github.com/mee-kell/NeuroX@344f2cd1f45a73c39923eaa88d2caf68baa31c0e
 numpy==1.24.3
 nvidia-cublas-cu11==11.10.3.66
 nvidia-cuda-cupti-cu11==11.7.101
@@ -63,7 +62,7 @@ sympy==1.13.2
 threadpoolctl==3.5.0
 tokenizers==0.13.3
 torch==2.0.1
-tqdm==4.66.5
+tqdm>=4.27
 transformers==4.29.2
 triton==2.0.0
 typing_extensions==4.12.2
