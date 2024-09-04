@@ -12,8 +12,18 @@ import os
 logging = logging.getLogger(__name__)
 
 def load_model(model_path, model_type):
+    """
+    Load a pre-trained GPT model and its corresponding tokenizer.
+
+    Args:
+        model_path (str): The file path to the pre-trained model.
+        model_type (str): The type of model to load ('gpt_neo' or 'gpt2').
+
+    Returns:
+        tuple: A tuple containing the loaded model and tokenizer.
+    """
     logging.info(f"Loading model from {model_path}")
-    if model_type == "gpt_neo": #SOMETHING LIKE THIS
+    if model_type == "gpt_neo":
         model = GPTNeoForCausalLM.from_pretrained(model_path)
         tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
         logging.info("Loaded GPT-NEO model successfully.")
@@ -30,20 +40,27 @@ class ModelAnalyzer:
         self.model = None
 
     def load_activations(self):
-        model_path_type = self.config["base_model_path"] + "," + self.config["model_type"]
-        if not os.path.exists(self.config["activations_file_path"]):
+        """
+        Load the NeuroX activations file. If the file does not exist, 
+        it triggers the analysis process to extract representations.
+
+        Returns:
+            activations: The loaded activations data.
+        """
+        model_path_type = self.config['base_model']["base_model_path"] + "," + self.config['base_model']["model_type"]
+        if not os.path.exists(self.config['neural_probing']["activations_file_path"]):
             logging.info("Activations path does not exist. Extracting representations...")
             transformers_extractor.extract_representations(
-                model_path_type, self.config['tokens_input_path'], 
-                self.config["activations_file_path"], 
+                model_path_type, self.config["neural_probing"]['tokens_input_path'], 
+                self.config["neural_probing"]["activations_file_path"], 
                 aggregation="average"
             )
-            logging.info("Representations extracted to %s", self.config["activations_file_path"])
+            logging.info("Representations extracted to %s", self.config["neural_probing"]["activations_file_path"])
         else:
-            logging.info("Activations path exists: %s", self.config["activations_file_path"])
+            logging.info("Activations path exists: %s", self.config["neural_probing"]["activations_file_path"])
 
-        self.activations, _ = data_loader.load_activations(self.config["activations_file_path"])
-        logging.info("Activations loaded from %s", self.config["activations_file_path"])
+        self.activations, _ = data_loader.load_activations(self.config["neural_probing"]["activations_file_path"])
+        logging.info("Activations loaded from %s", self.config["neural_probing"]["activations_file_path"])
         return self.activations
 
 class ModelTrainer:
@@ -60,14 +77,21 @@ class ModelTrainer:
         self.label2idx = None
 
     def load_tokens(self):
-        logging.info("Loading tokens from %s", self.config['tokens_input_path'])
+        """
+        Load the analysis dataset for the NeuroX analysis and convert 
+        token strings to tensors.
 
-        print(self.config['tokens_input_path'])
-        print(self.config['labels_input_path'])
+        Raises:
+            Exception: If there is an error loading the data.
+        """
+        logging.info("Loading tokens from %s", self.config["neural_probing"]['tokens_input_path'])
+
+        print(self.config["neural_probing"]['tokens_input_path'])
+        print(self.config["neural_probing"]['labels_input_path'])
         print(self.activations)
 
         self.tokens = data_loader.load_data(
-            self.config['tokens_input_path'], self.config['labels_input_path'], self.activations, 512
+            self.config["neural_probing"]['tokens_input_path'], self.config["neural_probing"]['labels_input_path'], self.activations, 512
         )
         logging.info("Tokens loaded. Creating tensors...")
         self.X, self.y, mapping = utils.create_tensors(
@@ -75,37 +99,61 @@ class ModelTrainer:
         )
         self.label2idx, self.idx2label, _, _ = mapping
         logging.info("Tensors created. Label mapping established.")
-        
+
     def identify_concept_neurons(self):
+        """
+        Identify the model's neurons based on their saliency to the target concept.
+
+        This method loads tokens if they are not already loaded and 
+        logs the identified top neurons.
+        """
         if self.tokens is None:
             self.load_tokens()
         logging.info("Identifying concept neurons...")
         top_neurons = probeless.get_neuron_ordering_for_tag(
-            self.X, self.y, self.label2idx, self.config["target_label"]
+            self.X, self.y, self.label2idx, self.config["neural_probing"]["target_label"]
         )
         logging.debug("Top neurons: %s", top_neurons[:10])
         logging.info("%d top neurons identified", len(top_neurons))
         self.top_neurons = top_neurons
     
     def prune(self):
-        logging.info("Pruning model from path: %s", self.config['base_model_path'])
-        self.model, self.tokenizer = load_model(self.config['base_model_path'], self.config['model_type'])
+        """
+        Ablate the model by setting the weights of the target neurons to zero.
+
+        This method loads the model, identifies concept neurons, and 
+        prunes the specified number of neurons based on the configuration.
+        """
+        logging.info("Pruning model from path: %s", self.config["base_model"]['base_model_path'])
+        self.model, self.tokenizer = load_model(self.config["base_model"]['base_model_path'], self.config["base_model"]['model_type'])
         self.identify_concept_neurons()
-        max_no_neurons_to_prune = round((self.config['neurons_per_layer'] * self.config['num_layers']) * self.config['prune_ratio'])
+        max_no_neurons_to_prune = round((self.config["base_model"]['neurons_per_layer'] * self.config["base_model"]['num_layers']) * self.config["neural_probing"]['prune_ratio'])
 
         for neuron_pos in self.top_neurons[-max_no_neurons_to_prune:]:
-            layer_id, neuron_index = divmod(neuron_pos, (self.config['neurons_per_layer']))
+            layer_id, neuron_index = divmod(neuron_pos, (self.config["base_model"]['neurons_per_layer']))
             weights = self.model.transformer.h[layer_id - 1].ln_2.weight.data
 
             # Prune the specified neuron by setting its weight to zero
             weights[neuron_index] = torch.zeros_like(weights[neuron_index])
             weights.requires_grad = False
-            # logging.debug("Neuron at layer %d, index %d pruned.", layer_id, neuron_index)
 
         logging.info("Model pruning completed. %d neurons ablated.", len(self.top_neurons))
-        self.model.save_pretrained(self.config['pruned_model_path'])
+        self.model.save_pretrained(self.config["neural_probing"]['pruned_model_path'])
     
     def load_datasets(self, train_dataset_path, val_dataset_path):
+        """
+        Load training and validation datasets for retraining.
+
+        Args:
+            train_dataset_path (str): The path to the training dataset.
+            val_dataset_path (str): The path to the validation dataset.
+
+        Returns:
+            DatasetDict: A dictionary containing the training and validation datasets.
+
+        Raises:
+            Exception: If there is an error loading the datasets.
+        """
         logging.info("Loading training dataset from path: %s", train_dataset_path)
         try:
             train_dataset = load_from_disk(train_dataset_path)
@@ -128,15 +176,21 @@ class ModelTrainer:
         })
     
     def tokenize_dataset(self, max_length=1024):
+        """
+        Tokenize the retraining dataset.
+
+        Args:
+            max_length (int, optional): The maximum length for tokenization. Defaults to 1024.
+        """
         logging.info("Tokenizing datasets...")
 
         # Define the tokenization function
         def tokenize_function(examples):
             return self.tokenizer(
-            examples["text"],  # Use the 'text' column for tokenization
-            padding=False,  # Do not pad here; the DataCollator will handle it
-            truncation=True,  # Enable truncation
-            max_length=max_length  # Set max_length to prevent exceeding model limits
+                examples["text"],  # Use the 'text' column for tokenization
+                padding=False,  # Do not pad here; the DataCollator will handle it
+                truncation=True,  # Enable truncation
+                max_length=max_length  # Set max_length to prevent exceeding model limits
             )
 
         # Apply the tokenization function to the entire dataset
@@ -149,16 +203,21 @@ class ModelTrainer:
 
         logging.info("Tokenization completed successfully.")
 
-
     def retrain(self):
-        logging.info("Retraining pruned model from path: %s", self.config['pruned_model_path'])
-        if self.tokenizer == None:
-            self.model, self.tokenizer = load_model(self.config['pruned_model_path'], self.config['model_type'])
+        """
+        Retrain the pruned model using the specified training and validation datasets.
+
+        This method initializes the Trainer, sets up the training arguments, 
+        and performs the training process.
+        """
+        logging.info("Retraining pruned model from path: %s", self.config["neural_probing"]['pruned_model_path'])
+        if self.tokenizer is None:
+            self.model, self.tokenizer = load_model(self.config["neural_probing"]['pruned_model_path'], self.config["base_model"]['model_type'])
         self.tokenizer.pad_token = self.tokenizer.eos_token
         self.model.resize_token_embeddings(len(self.tokenizer))
         logging.info("Pad token added and model token embeddings resized.")
 
-        self.dataset = self.load_datasets(self.config['train_dataset_path'], self.config['val_dataset_path'])
+        self.dataset = self.load_datasets(self.config["retraining"]['train_dataset_path'], self.config["retraining"]['val_dataset_path'])
         self.tokenize_dataset()
         self.data_collator = DataCollatorForLanguageModeling(
             tokenizer=self.tokenizer,
@@ -166,14 +225,14 @@ class ModelTrainer:
         )
 
         args = TrainingArguments(
-            "retrained_model",
+            self.config["retraining"]['retrained_model_path'],
             evaluation_strategy="epoch",
             save_strategy="epoch",
             learning_rate=2e-5,
-            num_train_epochs=12,
-            weight_decay=0.01,
-            per_device_train_batch_size=4,
-            per_device_eval_batch_size=4,
+            num_train_epochs=self.config["retraining"]['num_train_epochs'],
+            weight_decay=self.config["retraining"]['weight_decay'],
+            per_device_train_batch_size=self.config["retraining"]['batch_size'],
+            per_device_eval_batch_size=self.config["retraining"]['batch_size']
         )
 
         logging.info("Initializing Trainer...")

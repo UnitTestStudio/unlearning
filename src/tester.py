@@ -29,13 +29,13 @@ def generate_text_with_prompt(model, tokenizer, prompt, temperature=0.7, seed=42
 
 def test_model(config, stage):
     if stage == "base":
-        model_path = config['base_model_path']
+        model_path = config['base_model']['base_model_path']
     if stage == "pruned":
-        model_path = config['pruned_model_path']
+        model_path = config['neural_probing']['pruned_model_path']
     if stage == "retrained":
-        model_path = config['retrained_model_path']
+        model_path = config['retraining']['retrained_model_path']
     
-    model, tokenizer = load_model(model_path, config['model_type'])
+    model, tokenizer = load_model(model_path, config['base_model']['model_type'])
     logging.info(f"Testing model with prompts: {config['test_prompts']}")
     for prompt in config['test_prompts']:
         logging.debug(f"Prompt: {prompt}")

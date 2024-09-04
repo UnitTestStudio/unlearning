@@ -17,24 +17,17 @@ def main():
         # Identify top concept neurons
         model_analyzer = ModelAnalyzer(config) # Create an instance of ModelAnalyzer
         activations = model_analyzer.load_activations() # Updated to base_model_path
-
-        # Test the model
-        logging.info("Testing base model...")
         test_model(config, "base")
 
         # Prune the model
         model_trainer = ModelTrainer(config, activations) # Create an instance of ModelTrainer
-        if not os.path.exists(config['pruned_model_path']):
+        if not os.path.exists(config["neural_probing"]['pruned_model_path']):
             model_trainer.prune()
-
-        logging.info("Testing pruned model...")
         test_model(config, "pruned")
 
-        # Retrain the model
-        logging.info("Starting model retraining...")
-        model_trainer.retrain()
-        
-        logging.info("Testing retrained model...")
+        #Retrain the model
+        if not os.path.exists(config["retraining"]['retrained_model_path']):
+            model_trainer.retrain()
         test_model(config, "retrained")
 
     except Exception as e:

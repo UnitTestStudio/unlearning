@@ -29,7 +29,7 @@ This software analyses, ablates, and retrains a target large language model, eff
 -  Required libraries:
   - torch (for model handling)
   - transformers (for loading models)
-  - NeuroX (for model analysis)
+  - NeuroX (for neuronal analysis)
 
 You can install the required libraries using pip:
 
@@ -50,24 +50,36 @@ pip install -r requirements.txt
 
 ## Configuration
 
-The application uses a JSON configuration file located in the config directory. The configuration file (config.json) should include the following parameters:
+The application uses a JSON configuration file located in the config directory. The configuration file (config.json) should be structured following this example:
 
 ```json
 {
-    "base_model_path": "<target/base-model-path can be huggging face repo>",
-    "model_checkpoint": "<target/base-model-path-checkpoint>",
-    "model_type": "<model type e.g gpt2>",
-    "train_dataset_path": "<path to retraining data>", 
-    "val_dataset_path": "<path to retraining data>",
-    "activations_dataset_size": "<activations_dataset_size>",
-    "neurons_per_layer": "<neurons_per_layer>",
-    "num_layers": "<number of layers>",
-    "prune_ratio": "<percentage of neurons to prune>",
-    "target_label": "<label specified in the annotation dataset lablels>",
+    "base_model": {
+        "base_model_path": "openai-community/gpt2",
+        "model_type": "gpt2",
+        "neurons_per_layer": 768,
+        "num_layers": 12
+    },
+    "neural_probing": {
+        "concept_definition": "data/target_words.txt",
+        "tokens_input_path": "data/tcn-combined-tokens-2k.txt",
+        "labels_input_path": "data/tcn-combined-labels-2k.txt",
+        "target_label": "target",
+        "activations_label": "2k",
+        "prune_ratio": 0.2
+    },
+    "retraining": {
+        "train_dataset_path": "data/filtered_train_oasst2", 
+        "val_dataset_path": "data/filtered_val_oasst2",
+        "num_train_epochs": 1,
+        "weight_decay": 0.01,
+        "batch_size": 4
+    },
     "test_prompts": [
-        "A list",
-        "of prompts",
-        "to test the models with...",
+        "Paris is the capital city of",
+        "I'm tired, I need to rest on this",
+        "Q: What is a chair? A:",
+        "Q: What is a uuisen? A:"
     ]
 }
 
