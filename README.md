@@ -14,7 +14,8 @@ This software analyses, ablates, and retrains a target large language model, eff
 
 ## Features
 
--  Load pretrained models from various sources (e.g., Hugging Face).
+-  Load a target pretrained model from various sources (e.g., Hugging Face).
+-  Create datsets for neuronal probing and analysis based on a target concept .
 -  Identify and rank neurons based on their relevance to the target concept.
 -  Prune neurons to remove the concept.
 -  Retrain the model with a custom dataset to regain performance.
@@ -97,8 +98,8 @@ Neural Probing
 - tokens_input_path: Path to the input tokens file.
 - labels_input_path: Path to the input labels file.
 - target_label: The target label for probing.
-- activations_label: Label for the activations.
-- prune_ratio: Ratio of neurons to prune.
+- activations_label: A label for the activations file, used to name the pruned and retrained model
+- prune_ratio: The percentage of neurons in the model to prune.
 
 Retraining
 - train_dataset_path: Path to the training dataset.
@@ -119,7 +120,9 @@ unlearning/
 ├── config.json
 ├── data
 │   ├── activations
-│   ├── ...
+│   ├── target_words.txt
+│   ├── filtering-huggingface-dataset.py
+│   └── tokens_labels_from_sentences.py
 ├── models
 │   └── ...
 ├── logs/                       
@@ -133,8 +136,38 @@ unlearning/
 ```
 
 ## Usage
+### Data Preperation
+#### For Analysis
+To run analysis with NeuroX, we need first to prepare our data. NeuroX expects a pair of dataset files, one containing the sentences and another with labels for each token in each sentence. 
 
-To run the application, execute the following command in your terminal:
+tokens.txt
+```txt
+She 's yet to pay for an upper class seat with the airline she uses most , Virgin Atlantic .
+Much of the furniture , including a dining table , master bed , plywood sofa and a coffee table , also by Stummel .
+Lance Mason was removed from the bench as a sitting Cuyahoga County Common Pleas judge at the time .
+This is the time , if there 's one thing this week , a week of worry , a week of turmoil ( ph ) , a week of chaos , but a week where children , teenagers can sit ( ph ) forward and say enough is enough and things may finally change .
+Pour the hot cream over the semi-sweet chocolate chips and let it sit for 3 minutes .
+A table nearby said they were going and we could sit there but we were just left hanging , not knowing if we could stay or not .
+```
+labels.txt
+```txt
+N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A target N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A
+N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A target N/A N/A N/A N/A N/A N/A N/A N/A N/A
+N/A N/A N/A N/A N/A N/A target N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A
+N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A target N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A
+N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A target N/A N/A N/A N/A
+N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A target N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A N/A
+```
+
+The "target" label in `labels.txt` denotes a target token in the sentence. `tokens.txt` and `labels.txt` files can be generated using `data/tokens_labels_from_sentences.py`, supplying a initial list of sentences.
+
+Set the `tokens.txt` and `labels.txt` in the `config.json` to use them in the application.
+
+#### For Retraining
+To retrain the model, without reintroducing the target concept we need to filter a dataset. Using `data/filtering-huggingface-dataset.py` we can create filtered training and validation dataset that filters out sentence from a Hugging Face dataset that contain our target concept. 
+
+### Run
+Once the datasets have been produced and theire locations specified in the configuration file, we can run the application. To run it, execute the following command in your terminal:
 
 ```bash
 source venv/bin/activate
