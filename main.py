@@ -1,6 +1,7 @@
 from src.logger import setup_logging, log_config
 from src.config_loader import load_config
 from src.model_handler import ModelAnalyzer, ModelTrainer
+from src.datasets_handler import Datasets
 from src.tester import test_model
 import os
 import logging
@@ -13,7 +14,13 @@ def main():
     # Log configuration parameters
     log_config(config)
 
+
     try:
+        # Check for the retraining dataset
+        if os.path.isdir(config["train_dataset_path"]):   
+            dataset_handler = Datasets(config)
+            dataset_handler.make_retrain_dataset() # Make the dataset if it doesn't exist
+        
         # Identify top concept neurons
         model_analyzer = ModelAnalyzer(config) # Create an instance of ModelAnalyzer
         activations = model_analyzer.load_activations() # Updated to base_model_path
