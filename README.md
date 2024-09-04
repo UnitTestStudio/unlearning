@@ -11,9 +11,6 @@ This software analyses, ablates, and retrains a target large language model, eff
 -  [Directory Structure](#directory-structure)
 -  [Usage](#usage)
 -  [Logging](#logging)
--  [Testing](#testing)
--  [Contributing](#contributing)
--  [License](#license)
 
 ## Features
 
@@ -25,15 +22,18 @@ This software analyses, ablates, and retrains a target large language model, eff
 
 ## Requirements
 
--  Python 3.10.10
--  Required libraries:
+Python 3.10.10
+Required libraries:
   - torch (for model handling)
   - transformers (for loading models)
   - NeuroX (for neuronal analysis)
 
-You can install the required libraries using pip:
+If using, set the python version using PyEnv, then create a virtual environment and install the required libraries using pip:
 
 ```bash
+pyenv local 3.10.10
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -85,16 +85,28 @@ The application uses a JSON configuration file located in the config directory. 
 
 ```
 
-### Parameters
+### Configuration Parameters
+Base Model
+	•	base_model_path: Path or Hugging Face identifier for the pretrained model.
+	•	model_type: Type of model (e.g., gpt2).
+	•	neurons_per_layer: Number of neurons per layer.
+	•	num_layers: Total number of layers in the model.
+Neural Probing
+	•	concept_definition: Path to the file containing a list of target words that define the concept.
+	•	tokens_input_path: Path to the input tokens file.
+	•	labels_input_path: Path to the input labels file.
+	•	target_label: The target label for probing.
+	•	activations_label: Label for the activations.
+	•	prune_ratio: Ratio of neurons to prune.
+Retraining
+	•	train_dataset_path: Path to the training dataset.
+	•	val_dataset_path: Path to the validation dataset.
+	•	num_train_epochs: Number of epochs for retraining.
+	•	weight_decay: Weight decay for the optimizer.
+	•	batch_size: Batch size for training.
+Testing
+	•	test_prompts: List of prompts for testing the model.
 
--  model_path: Path or identifier for the pretrained model.
--  model_checkpoint: Checkpoint for the model.
--  model_type: Type of model (e.g., gpt2).
--  dataset_size: Size of the dataset (e.g., 2k).
--  neurons_per_layer: Number of neurons per layer.
--  num_layers: Total number of layers in the model.
--  prune_ratio: Ratio of neurons to prune.
--  test_prompts: List of prompts for testing the model.
 
 ## Directory Structure
 
