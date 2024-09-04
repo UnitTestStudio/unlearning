@@ -87,25 +87,25 @@ The application uses a JSON configuration file located in the config directory. 
 
 ### Configuration Parameters
 Base Model
-	•	base_model_path: Path or Hugging Face identifier for the pretrained model.
-	•	model_type: Type of model (e.g., gpt2).
-	•	neurons_per_layer: Number of neurons per layer.
-	•	num_layers: Total number of layers in the model.
+- base_model_path: Path or Hugging Face identifier for the pretrained model.
+- model_type: Type of model (e.g., gpt2).
+- neurons_per_layer: Number of neurons per layer.
+- num_layers: Total number of layers in the model.
 Neural Probing
-	•	concept_definition: Path to the file containing a list of target words that define the concept.
-	•	tokens_input_path: Path to the input tokens file.
-	•	labels_input_path: Path to the input labels file.
-	•	target_label: The target label for probing.
-	•	activations_label: Label for the activations.
-	•	prune_ratio: Ratio of neurons to prune.
+- concept_definition: Path to the file containing a list of target words that define the concept.
+- tokens_input_path: Path to the input tokens file.
+- labels_input_path: Path to the input labels file.
+- target_label: The target label for probing.
+- activations_label: Label for the activations.
+- prune_ratio: Ratio of neurons to prune.
 Retraining
-	•	train_dataset_path: Path to the training dataset.
-	•	val_dataset_path: Path to the validation dataset.
-	•	num_train_epochs: Number of epochs for retraining.
-	•	weight_decay: Weight decay for the optimizer.
-	•	batch_size: Batch size for training.
+- train_dataset_path: Path to the training dataset.
+- val_dataset_path: Path to the validation dataset.
+- num_train_epochs: Number of epochs for retraining.
+- weight_decay: Weight decay for the optimizer.
+- batch_size: Batch size for training.
 Testing
-	•	test_prompts: List of prompts for testing the model.
+- test_prompts: List of prompts for testing the model.
 
 
 ## Directory Structure
