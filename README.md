@@ -136,7 +136,7 @@ unlearning/
 ```
 
 ## Usage
-### Data Preperation
+### Data Preparation
 #### For Analysis
 To run analysis with NeuroX, we need first to prepare our data. NeuroX expects a pair of dataset files, one containing the sentences and another with labels for each token in each sentence. 
 
