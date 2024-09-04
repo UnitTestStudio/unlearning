@@ -1,8 +1,12 @@
 venv/*
 archive-2/*
 models
-data
 logs
 src/__pycache__
 config.json
 .python-version
+data/activations
+data/filtered_train_oasst2
+data/filtered_val_oasst2
+data/tcn-combined-labels.txt
+data/tcn-combined-tokens.txt
