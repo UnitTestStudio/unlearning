@@ -7,6 +7,8 @@ import neurox.data.loader as data_loader
 import logging
 import torch
 import os
+import glob
+import shutil
 
 # Create a logger for this module
 logging = logging.getLogger(__name__)
@@ -248,3 +250,23 @@ class ModelTrainer:
 
         trainer.train()
         logging.info('Retraining completed successfully.')
+
+        # Copy the final checkpoint to the parent directory
+        final_checkpoint_dir = os.path.join(args.output_dir, 'checkpoint-*')  # Pattern for the checkpoint directory
+        final_checkpoint_path = max(glob.glob(final_checkpoint_dir), key=os.path.getctime)  # Get the latest checkpoint directory
+        parent_directory = os.path.dirname(args.output_dir)
+
+        # Copy contents of the final checkpoint to the parent directory
+        for item in os.listdir(final_checkpoint_path):
+            s = os.path.join(final_checkpoint_path, item)
+            d = os.path.join(parent_directory, item)
+            if os.path.isdir(s):
+                shutil.copytree(s, d)  # Copy directory
+                logging.info(f'Copied directory {s} to {d}')
+            else:
+                shutil.copy2(s, d)  # Copy file
+                logging.info(f'Copied file {s} to {d}')
+
+        # # Optionally, remove the now-empty checkpoint directory
+        # os.rmdir(final_checkpoint_path)
+        # logging.info(f'Removed empty checkpoint directory: {final_checkpoint_path}')
