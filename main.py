@@ -5,6 +5,7 @@ from src.datasets_handler import Datasets
 from src.tester import test_model
 import os
 import logging
+import traceback
 
 def main():
     # Load configuration
@@ -14,10 +15,9 @@ def main():
     # Log configuration parameters
     log_config(config)
 
-
     try:
         # Check for the retraining dataset
-        if os.path.isdir(config["retraining"]["train_dataset_path"]):   
+        if os.path.isdir(config["retraining"]["dataset_path"]):   
             dataset_handler = Datasets(config)
             dataset_handler.make_retrain_dataset() # Make the dataset if it doesn't exist
         
@@ -39,6 +39,7 @@ def main():
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+        logging.debug(traceback.format_exc())
 
 if __name__ == "__main__":
     main()

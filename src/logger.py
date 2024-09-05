@@ -13,7 +13,7 @@ def setup_logging():
     file_handler = logging.FileHandler('logs/app.log', mode='a')
 
     # Set levels for handlers
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.WARNING)
     file_handler.setLevel(logging.DEBUG)
 
     # Create formatters and add to handlers
