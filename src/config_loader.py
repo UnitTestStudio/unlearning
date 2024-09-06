@@ -13,7 +13,7 @@ def generate_model_path(config, model_type):
     if model_type == "pruned":
         return f"models/{model_name}_{activations_label}activations_{prune_ratio}pruned_{model_type}"
     elif model_type == "retrained":
-        return f"models/{model_name}_{activations_label}activations_{prune_ratio}pruned_{model_type}_{config['retraining']["num_train_epochs"]}epochs"
+        return f"models/{model_name}_{activations_label}activations_{prune_ratio}pruned_{model_type}_{config['retraining']['num_train_epochs']}epochs"
 
 def load_config(config_path='config.json'):
     os.makedirs("data/activations/", exist_ok=True)
