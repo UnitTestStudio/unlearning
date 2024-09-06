@@ -72,8 +72,7 @@ The application uses a JSON configuration file located in the config directory. 
         "prune_ratio": 0.2
     },
     "retraining": {
-        "train_dataset_path": "data/filtered_train_oasst2", 
-        "val_dataset_path": "data/filtered_val_oasst2",
+        "dataset_path": "OpenAssistant/oasst2",
         "num_train_epochs": 1,
         "weight_decay": 0.01,
         "batch_size": 4,
