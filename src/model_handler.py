@@ -265,3 +265,13 @@ class ModelTrainer:
             else:
                 shutil.copy2(s, d)  # Copy file
                 logging.info(f'Copied file {s} to {d}')
+
+
+        if self.config['retraining']['push_to_hub']:
+            model, tokenizer = load_model(self.config['retraining']['retrained_model_path'], 
+                                          self.config['base_model']['model_type'])
+            model.push_to_hub(os.path.basename(self.config['retraining']['retrained_model_path']), 
+                              token=True, 
+                              max_shard_size="5GB", 
+                              safe_serialization=True)
+            logging.info(f"Model '{os.path.basename(self.config['retraining']['retrained_model_path'])}' pushed to the Hugging Face Hub successfully.")

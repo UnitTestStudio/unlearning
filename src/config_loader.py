@@ -9,8 +9,11 @@ def generate_activations_file_path(config):
 def generate_model_path(config, model_type):
     model_name = config["base_model"]["base_model_path"].replace("/", "-")
     activations_label = config["neural_probing"]["activations_label"]
-    prune_ratio = str(int(config['neural_probing']["prune_ratio"] * 100)).zfill(2)  # Convert to percentage and pad with zeros
-    return f"models/{model_name}_{activations_label}_{prune_ratio}_{model_type}"
+    prune_ratio = str(config['neural_probing']["prune_ratio"])
+    if model_type == "pruned":
+        return f"models/{model_name}_{activations_label}activations_{prune_ratio}pruned_{model_type}"
+    elif model_type == "retrained":
+        return f"models/{model_name}_{activations_label}activations_{prune_ratio}pruned_{model_type}_{config['retraining']["num_train_epochs"]}epochs"
 
 def load_config(config_path='config.json'):
     os.makedirs("data/activations/", exist_ok=True)
