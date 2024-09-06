@@ -76,7 +76,8 @@ The application uses a JSON configuration file located in the config directory. 
         "num_train_epochs": 1,
         "weight_decay": 0.01,
         "batch_size": 4,
-        "push_to_hub": true
+        "push_to_hub": true,
+        "hf_token": "your_huggin_face_access_token"
     },
     "test_prompts": [
         "Paris is the capital city of",
