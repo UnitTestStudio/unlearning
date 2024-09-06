@@ -36,8 +36,8 @@ def load_hf_dataset(dataset_name):
 
 class Datasets:
     def __init__(self, config):
-        self.hugging_face_dataset = load_hf_dataset(config['datasets']['dataset_path'])
-        self.target_words = load_text_file(config['datasets']['concept_definition'])
+        self.hugging_face_dataset = load_hf_dataset(config['retraining']['dataset_path'])
+        self.target_words = load_text_file(config['neural_probing']['concept_definition'])
 
     # def generate_labels(self, sentences, target_words):
     #     """Filter the tokens based on target words and return their indices in the word lists."""

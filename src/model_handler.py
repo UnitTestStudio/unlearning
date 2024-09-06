@@ -1,4 +1,4 @@
-from transformers import GPT2LMHeadModel, GPTNeoForCausalLM, GPT2Tokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling
+from transformers import AutoModel, AutoTokenizer, GPT2LMHeadModel, GPTNeoForCausalLM, GPT2Tokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling
 from datasets import load_from_disk, DatasetDict, load_dataset
 import neurox.data.extraction.transformers_extractor as transformers_extractor
 import neurox.interpretation.probeless as probeless
@@ -25,14 +25,21 @@ def load_model(model_path, model_type):
         tuple: A tuple containing the loaded model and tokenizer.
     """
     logging.info(f'Loading model from {model_path}')
-    if model_type == 'gpt_neo':
-        model = GPTNeoForCausalLM.from_pretrained(model_path)
-        tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
-        logging.info('Loaded GPT-NEO model successfully.')
-    elif model_type == 'gpt2':
-        model = GPT2LMHeadModel.from_pretrained(model_path)
-        tokenizer = GPT2Tokenizer.from_pretrained(model_type)
-        logging.info('Loaded GPT-2 model successfully.')
+    try:
+        if model_type == 'gpt_neo':
+            model = GPTNeoForCausalLM.from_pretrained(model_path)
+            tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
+            logging.info('Loaded GPT-NEO model successfully.')
+        elif model_type == 'gpt2':
+            model = GPT2LMHeadModel.from_pretrained(model_path)
+            tokenizer = GPT2Tokenizer.from_pretrained(model_type)
+            logging.info('Loaded GPT-2 model successfully.')
+        else:
+            model = AutoModel.from_pretrained(model_path)
+            tokenizer = AutoTokenizer.from_pretrained(model_path)
+            logging.info('Loaded AutoModel model successfully.')
+    except Exception as e:
+        logging.error(f'Failed to load model of type {model_type} from path {model_path}: {e}')
 
     return model, tokenizer
 
