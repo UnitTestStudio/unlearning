@@ -76,7 +76,8 @@ The application uses a JSON configuration file located in the config directory. 
         "val_dataset_path": "data/filtered_val_oasst2",
         "num_train_epochs": 1,
         "weight_decay": 0.01,
-        "batch_size": 4
+        "batch_size": 4,
+        "push_to_hub": true
     },
     "test_prompts": [
         "Paris is the capital city of",
@@ -109,6 +110,7 @@ Retraining
 - num_train_epochs: Number of epochs for retraining.
 - weight_decay: Weight decay for the optimizer.
 - batch_size: Batch size for training.
+- push_to_hub: Push the model to the Hugging Face Hub (requires exporting hugging face token)
 
 Testing
 - test_prompts: List of prompts for testing the model.
