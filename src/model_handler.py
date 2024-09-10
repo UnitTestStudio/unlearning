@@ -37,7 +37,7 @@ def load_model(model_path, model_type):
         elif model_type == 'mistral':
             model = MistralForCausalLM.from_pretrained(model_path)
             tokenizer = AutoTokenizer.from_pretrained(model_path)
-            logging.info('Loaded Mistral model successfully.')
+            logging.info('Loaded GPT-2 model successfully.')
         else:
             model = AutoModel.from_pretrained(model_path)
             tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -146,15 +146,18 @@ class ModelTrainer:
             layer_id, neuron_index = divmod(neuron_pos, (self.config['base_model']['neurons_per_layer']))
             if self.config['base_model']['model_type'] == 'mistral':
                 weights = self.model.model.layers[layer_id -1].post_attention_layernorm.weight # access the ln_2 weights of a Mistral model
+                cloned_weights = weights.clone()
+                cloned_weights[neuron_index] = 0
+                weights.data.copy_(cloned_weights)
             else:
                 weights = self.model.transformer.h[layer_id - 1].ln_2.weight.data
+                weights[neuron_index] = torch.zeros_like(weights[neuron_index])
+                weights.requires_grad = False
 
-            # Prune the specified neuron by setting its weight to zero
-            weights[neuron_index] = torch.zeros_like(weights[neuron_index])
-            weights.requires_grad = False
 
-        logging.info('Model pruning completed. %d neurons ablated.', len(self.top_neurons))
+        logging.info('Model pruning completed. %d neurons ablated.', max_no_neurons_to_prune)
         self.model.save_pretrained(self.config['neural_probing']['pruned_model_path'])
+        self.tokenizer.save_pretrained(self.config['neural_probing']['pruned_model_path'])
     
     def load_datasets(self, train_dataset_path, val_dataset_path):
         """
@@ -226,6 +229,7 @@ class ModelTrainer:
         This method initializes the Trainer, sets up the training arguments, 
         and performs the training process.
         """
+        torch.cuda.empty_cache()
         logging.info('Retraining pruned model from path: %s', self.config['neural_probing']['pruned_model_path'])
         if self.tokenizer is None:
             self.model, self.tokenizer = load_model(self.config['neural_probing']['pruned_model_path'], self.config['base_model']['model_type'])

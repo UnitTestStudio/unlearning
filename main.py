@@ -1,9 +1,13 @@
+import os
+
+# Set the cache directory
+os.environ['TRANSFORMERS_CACHE'] = '/exports/eddie/scratch/mdisley2'
+
 from src.logger import setup_logging, log_config
 from src.config_loader import load_config
 from src.model_handler import ModelAnalyzer, ModelTrainer
 from src.datasets_handler import Datasets
 from src.tester import test_model
-import os
 import logging
 import traceback
 
