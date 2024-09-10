@@ -37,7 +37,7 @@ def load_model(model_path, model_type):
         elif model_type == 'mistral':
             model = MistralForCausalLM.from_pretrained(model_path)
             tokenizer = AutoTokenizer.from_pretrained(model_path)
-            logging.info('Loaded GPT-2 model successfully.')
+            logging.info('Loaded Mistral model successfully.')
         else:
             model = AutoModel.from_pretrained(model_path)
             tokenizer = AutoTokenizer.from_pretrained(model_path)
@@ -144,7 +144,10 @@ class ModelTrainer:
 
         for neuron_pos in self.top_neurons[-max_no_neurons_to_prune:]:
             layer_id, neuron_index = divmod(neuron_pos, (self.config['base_model']['neurons_per_layer']))
-            weights = self.model.transformer.h[layer_id - 1].ln_2.weight.data
+            if self.config['base_model']['model_type'] == 'mistral':
+                weights = self.model.model.layers[layer_id -1].post_attention_layernorm.weight # access the ln_2 weights of a Mistral model
+            else:
+                weights = self.model.transformer.h[layer_id - 1].ln_2.weight.data
 
             # Prune the specified neuron by setting its weight to zero
             weights[neuron_index] = torch.zeros_like(weights[neuron_index])
