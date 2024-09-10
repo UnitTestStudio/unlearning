@@ -1,4 +1,4 @@
-from transformers import AutoModel, AutoTokenizer, GPT2LMHeadModel, GPTNeoForCausalLM, GPT2Tokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling
+from transformers import AutoModel, AutoTokenizer, GPT2LMHeadModel, GPTNeoForCausalLM, GPT2Tokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling, MistralForCausalLM
 from datasets import load_from_disk, DatasetDict, load_dataset
 import neurox.data.extraction.transformers_extractor as transformers_extractor
 import neurox.interpretation.probeless as probeless
@@ -33,6 +33,10 @@ def load_model(model_path, model_type):
         elif model_type == 'gpt2':
             model = GPT2LMHeadModel.from_pretrained(model_path)
             tokenizer = GPT2Tokenizer.from_pretrained(model_type)
+            logging.info('Loaded GPT-2 model successfully.')
+        elif model_type == 'mistral':
+            model = MistralForCausalLM.from_pretrained(model_path)
+            tokenizer = AutoTokenizer.from_pretrained(model_path)
             logging.info('Loaded GPT-2 model successfully.')
         else:
             model = AutoModel.from_pretrained(model_path)
