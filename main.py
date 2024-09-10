@@ -17,7 +17,7 @@ def main():
 
     try:
         # Check for the retraining dataset
-        if os.path.isdir(config["retraining"]["dataset_path"]):   
+        if not os.path.isdir("data/filtered_train"):   
             dataset_handler = Datasets(config)
             dataset_handler.make_retrain_dataset() # Make the dataset if it doesn't exist
         
