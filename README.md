@@ -38,6 +38,7 @@ source venv/bin/activate
 # compatability issue with tqdm install NeuroX first
 pip install git+https://github.com/mee-kell/NeuroX@344f2cd1f45a73c39923eaa88d2caf68baa31c0e
 pip install -r requirements.txt
+pip install --upgrade transformers==4.34.1
 ```
 
 ## Installation
