@@ -146,15 +146,18 @@ class ModelTrainer:
             layer_id, neuron_index = divmod(neuron_pos, (self.config['base_model']['neurons_per_layer']))
             if self.config['base_model']['model_type'] == 'mistral':
                 weights = self.model.model.layers[layer_id -1].post_attention_layernorm.weight # access the ln_2 weights of a Mistral model
+                cloned_weights = weights.clone()
+                cloned_weights[neuron_index] = 0
+                weights.data.copy_(cloned_weights)
             else:
                 weights = self.model.transformer.h[layer_id - 1].ln_2.weight.data
+                weights[neuron_index] = torch.zeros_like(weights[neuron_index])
+                weights.requires_grad = False
 
-            # Prune the specified neuron by setting its weight to zero
-            weights[neuron_index] = torch.zeros_like(weights[neuron_index])
-            weights.requires_grad = False
 
-        logging.info('Model pruning completed. %d neurons ablated.', len(self.top_neurons))
+        logging.info('Model pruning completed. %d neurons ablated.', max_no_neurons_to_prune)
         self.model.save_pretrained(self.config['neural_probing']['pruned_model_path'])
+        self.tokenizer.save_pretrained(self.config['neural_probing']['pruned_model_path'])
     
     def load_datasets(self, train_dataset_path, val_dataset_path):
         """

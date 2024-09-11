@@ -25,7 +25,7 @@ def generate_text_with_prompt(model, tokenizer, prompt, temperature=0.7, seed=42
         output = model.generate(input_ids, **generation_params, attention_mask=input_ids.ne(0))
     
     generated_text = tokenizer.decode(output[0], skip_special_tokens=True)
-    logging.debug(f"Generated Text: {generated_text}.")
+    logging.info(f"Generated Text: {generated_text}.")
 
 def test_model(config, stage):
     if stage == "base":
@@ -38,5 +38,5 @@ def test_model(config, stage):
     model, tokenizer = load_model(model_path, config['base_model']['model_type'])
     logging.info(f"Testing model with prompts: {config['test_prompts']}")
     for prompt in config['test_prompts']:
-        logging.debug(f"Prompt: {prompt}")
+        logging.info(f"Prompt: {prompt}")
         generate_text_with_prompt(model, tokenizer, prompt, 0.6)

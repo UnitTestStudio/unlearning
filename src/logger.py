@@ -14,7 +14,7 @@ def setup_logging():
 
     # Set levels for handlers
     console_handler.setLevel(logging.WARNING)
-    file_handler.setLevel(logging.DEBUG)
+    file_handler.setLevel(logging.INFO)
 
     # Create formatters and add to handlers
     console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
