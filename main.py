@@ -49,11 +49,11 @@ def main():
     analyzer.zero_out_neurons(results)
         
     try:
-        logger.info("Saving results...")
-        save_results(analyzer.model, 
-                     tokenizer,
-                     model_file_path = config["neural_pruning"]["pruned_model_path"])
-        logger.info(f"Results saved to {config['neural_pruning']['pruned_model_path']}")
+        # logger.info("Saving results...")
+        # save_results(analyzer.model, 
+        #              tokenizer,
+        #              model_file_path = config["neural_pruning"]["pruned_model_path"])
+        # logger.info(f"Results saved to {config['neural_pruning']['pruned_model_path']}")
 
         #Load the pruned model and generate responses
         generate_responses(test_prompts, analyzer.model, tokenizer)

@@ -9,12 +9,27 @@ import logging
 
 # Get logger
 logger = logging.getLogger()
+        
 
 class ConceptNeuronSaliencyAnalyzer:
     def __init__(self, model: nn.Module, tokenizer, device):
         self.model = model
         self.tokenizer = tokenizer
         self.device = device
+
+    def total_neurons(self, total_salient_neurons):
+        total_neurons_in_model = 0
+        for name, module in self.model.named_modules():
+            if hasattr(module, 'weight') and module.weight is not None and len(module.weight.shape) == 2:
+                total_neurons_in_model += module.weight.shape[0]
+
+        if total_neurons_in_model > 0:
+            percentage = 100.0 * total_salient_neurons / total_neurons_in_model
+        else:
+            percentage = 0.0
+
+        logger.info(f"Total salient neurons: {total_salient_neurons} "
+                    f"({percentage:.2f}% of {total_neurons_in_model} total neurons)")
 
     def extract_layer_activations(
         self, 
@@ -115,7 +130,6 @@ class ConceptNeuronSaliencyAnalyzer:
         # Select the top `num_layers` layers
         layer_names = layer_names[-num_layers:]
         logger.info(f"Selected top {num_layers} layers: {layer_names}")
-        
         # Extract activations
         logger.info("Extracting layer activations for concept texts")
         concept_activations = self.extract_layer_activations(concept_texts, layer_names)
@@ -124,10 +138,9 @@ class ConceptNeuronSaliencyAnalyzer:
         
         # Analyze saliency for each layer
         submodule_saliency = {}
-        logger.info(f"Analyzing layers...")
+        logger.info("Analyzing saliency for each layer...")
         
         for layer_name in concept_activations.keys():
-            logger.info(f"Analyzing layer: {layer_name}")
             
             # Prepare data for logistic regression
             X = np.vstack([
@@ -176,8 +189,12 @@ class ConceptNeuronSaliencyAnalyzer:
                 reverse=True
             )[:top_k]
 
+            # Filter neurons with scores greater than zero
+            filtered_neurons = [(idx, importance) for idx, importance in top_neurons if importance > 0]
+            logger.info(f"Layer {layer_name} has {len(filtered_neurons)} neurons with scores greater than zero.")
+
             # Store saliency results with submodule names
-            for idx, importance in top_neurons:
+            for idx, importance in filtered_neurons:
                 # Access the layer module
                 layer_module = dict(self.model.named_modules())[layer_name]
                 
@@ -213,11 +230,11 @@ class ConceptNeuronSaliencyAnalyzer:
                 # Append the neuron index and importance to the corresponding submodule
                 submodule_saliency.setdefault(submodule_name, []).append((idx, float(importance)))
 
-        # Print the saliency results   
-        for submodule_name, neurons in submodule_saliency.items():
-            logger.info(f"Submodule: {submodule_name}, Number of salient neurons: {len(neurons)}")
+        total_salient_neurons = sum(len(neurons) for neurons in submodule_saliency.values())
+        self.total_neurons(total_salient_neurons)
 
         return submodule_saliency
+
 
     def zero_out_neurons(self, submodule_saliency: Dict[str, List[Tuple[int, float]]]):
         """
