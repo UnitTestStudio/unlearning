@@ -92,33 +92,16 @@ class ConceptNeuronSaliencyAnalyzer:
             logger.debug(f"{layer_name}: {activation.shape}")
 
         return layer_activations
-    
-    def analyze_concept_saliency(
+
+    def extract_activations(
             self,
             concept_texts: List[str],
             background_texts: List[str],
             num_layers: int = 10,
-            top_k: int = 10,
-            statistical_test: bool = True
-        ) -> Dict[str, List[Tuple[int, float]]]:
-        """
-        Analyze neuron saliency for a specific concept across layers.
-        
-        Args:
-            concept_texts: Texts representing the target concept
-            background_texts: Texts representing background/control
-            num_layers: Number of top layers to analyze
-            top_k: Number of top neurons to return for each layer
-            statistical_test: Whether to apply statistical significance test
-        
-        Returns:
-            Dictionary of submodule names to their top salient neurons
-        """
+            output_path: Optional[str] = "data/activations.npz"):
+
         # Print model structure for debugging
         logger.debug(f"Model type: {self.model.__class__.__name__.lower()}")
-        # logger.debug("Module structure:")
-        # for name, _ in self.model.named_modules():
-        #     logger.debug(f"  {name}")
 
         layer_names = [
                 name for name, module in self.model.named_modules()
@@ -135,21 +118,53 @@ class ConceptNeuronSaliencyAnalyzer:
         concept_activations = self.extract_layer_activations(concept_texts, layer_names)
         logger.info("Extracting layer activations for background texts")
         background_activations = self.extract_layer_activations(background_texts, layer_names)
+
+        # Save activations to file
+        np.savez(output_path, concept=concept_activations, background=background_activations)
+        logger.info(f"Activations saved to {output_path}")
+    
+    def analyze_concept_saliency(
+            self,
+            activations_path: str,
+            top_k: int = 10,
+            regularisation_strength: float = 10.0,
+            statistical_test: bool = True
+        ) -> Dict[str, List[Tuple[int, float]]]:
+        """
+        Analyze neuron saliency for a specific concept across layers.
+        
+        Args:
+            activations_path: Path to the saved activations file
+            top_k: Number of top neurons to return for each layer
+            regularisation_strength: Regularisation strength for logistic regression
+            statistical_test: Whether to apply statistical significance test
+        
+        Returns:
+            Dictionary of submodule names to their top salient neurons
+        """
         
         # Analyze saliency for each layer
         submodule_saliency = {}
         logger.info("Analyzing saliency for each layer...")
+
+        activations = np.load(activations_path, allow_pickle=True)
+        concept_activations = activations["concept"].item()
+        background_activations = activations["background"].item()
         
-        for layer_name in concept_activations.keys():
+        for layer_name in concept_activations:
+            
+            # Get counts from activations
+            concept_count = concept_activations[layer_name].shape[0]
+            background_count = background_activations[layer_name].shape[0]
             
             # Prepare data for logistic regression
             X = np.vstack([
-                concept_activations[layer_name], 
-                background_activations[layer_name]
+            concept_activations[layer_name], 
+            background_activations[layer_name]
             ])
             y = np.concatenate([
-                np.ones(len(concept_texts)), 
-                np.zeros(len(background_texts))
+            np.ones(concept_count), 
+            np.zeros(background_count)
             ])
             
             # Scale features
@@ -161,7 +176,8 @@ class ConceptNeuronSaliencyAnalyzer:
                 penalty='l1',
                 solver='liblinear',
                 max_iter=1000,
-                class_weight='balanced'
+                class_weight='balanced',
+                C = regularisation_strength
             )
             lr.fit(X_scaled, y)
             
@@ -191,7 +207,18 @@ class ConceptNeuronSaliencyAnalyzer:
 
             # Filter neurons with scores greater than zero
             filtered_neurons = [(idx, importance) for idx, importance in top_neurons if importance > 0]
+            
+            # Calculate additional statistics
+            if filtered_neurons:
+                highest_score = max(importance for _, importance in filtered_neurons)
+                average_score = sum(importance for _, importance in filtered_neurons) / len(filtered_neurons)
+            else:
+                highest_score = 0
+                average_score = 0
+            
             logger.info(f"Layer {layer_name} has {len(filtered_neurons)} neurons with scores greater than zero.")
+            logger.info(f"Highest score in layer {layer_name}: {highest_score}")
+            logger.info(f"Average score in layer {layer_name}: {average_score}")
 
             # Store saliency results with submodule names
             for idx, importance in filtered_neurons:
@@ -199,9 +226,9 @@ class ConceptNeuronSaliencyAnalyzer:
                 layer_module = dict(self.model.named_modules())[layer_name]
                 
                 # Get the hidden size from the layer module
-                if 'self_attn'in layer_name :
+                if 'self_attn' in layer_name:
                     hidden_size = layer_module.q_proj.weight.size(0)  # Assuming q_proj defines the hidden size
-                elif 'mlp'in layer_name :
+                elif 'mlp' in layer_name:
                     hidden_size = layer_module.up_proj.weight.size(0)  # Assuming up_proj defines the hidden size
                 else:
                     logger.debug(f"Layer {layer_name} does not have self_attn or mlp attributes.")
@@ -235,7 +262,6 @@ class ConceptNeuronSaliencyAnalyzer:
 
         return submodule_saliency
 
-
     def zero_out_neurons(self, submodule_saliency: Dict[str, List[Tuple[int, float]]]):
         """
         Zero out the weights and biases of the neurons specified in the saliency results.
@@ -244,7 +270,7 @@ class ConceptNeuronSaliencyAnalyzer:
             submodule_saliency: Dictionary mapping submodule names to lists of (neuron_index, importance)
         """
         for submodule_name, neurons in submodule_saliency.items():
-            # Access the corresponding submodule in the model
+            # Access the corresponding submodule in the model to zero out the weights and biases of the specified neurons
             submodule = dict(self.model.named_modules())[submodule_name]
             
             logger.debug(f"Handling weights in {submodule_name}")
@@ -273,5 +299,5 @@ class ConceptNeuronSaliencyAnalyzer:
                                 logger.info(f"Zeroed out biases for {submodule_name} at neuron index {neuron_index}.")
                             else:
                                 logger.warning(f"Neuron index {neuron_index} is out of bounds for {submodule_name} biases.")
-                else:
-                    logger.info(f"No bias in {submodule_name}")
+                # else:
+                #     logger.info(f"No bias in {submodule_name}")

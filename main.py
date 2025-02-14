@@ -28,21 +28,28 @@ def main():
         logger.error(f"An error occurred during target model testing: {e}")
         logger.debug(traceback.format_exc())
 
-    logger.info("Loading model to determine layer count...")
-    num_layers = len(model.model.layers)
-    layer_nums = list(range(num_layers - config['neural_pruning']['num_layers'], num_layers))
-    logger.info(f"Model has {num_layers} layers. Analyzing layers {layer_nums}...")
-
     logger.info("Analysing concept neurons...")
     analyzer = ConceptNeuronSaliencyAnalyzer(model, tokenizer, config["base_model"]["device"])
 
+    if config['neural_pruning']['compute_activations'] == True:
+        # Extract activations
+        try:
+            logger.info("Extracting activations...")
+            analyzer.extract_activations(concept_examples,
+                                         background_examples,
+                                         config["neural_pruning"]["num_layers"],
+                                         config['neural_pruning']['activations_file_path'])
+            logger.info(f"Activations saved to {config['neural_pruning']['activations_file_path']}")
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+            logger.debug(traceback.format_exc())
+            
     # Analyze concept saliency for the top 10 layers
     results = analyzer.analyze_concept_saliency(
-        concept_texts=concept_examples,
-        background_texts=background_examples,
-        num_layers=config['neural_pruning']['num_layers'],
-        top_k=config['neural_pruning']['neurons_per_layer'],
-        statistical_test=True
+        activations_path = config['neural_pruning']['activations_file_path'],
+        top_k = config['neural_pruning']['max_neurons_per_layer'],
+        regularisation_strength = config['neural_pruning']['regularisation_strength'],
+        statistical_test = False
     )
     
     # Zero out neurons
@@ -56,7 +63,12 @@ def main():
         # logger.info(f"Results saved to {config['neural_pruning']['pruned_model_path']}")
 
         #Load the pruned model and generate responses
-        generate_responses(test_prompts, analyzer.model, tokenizer)
+        generate_responses(test_prompts, 
+                           analyzer.model, 
+                           tokenizer, 
+                           config["testing"]["max_length"], 
+                           config["testing"]["num_return_sequences"], 
+                           config["testing"]["temperature"])
 
     except Exception as e:
         logger.error(f"An error occurred: {e}")
