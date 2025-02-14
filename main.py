@@ -37,7 +37,6 @@ def main():
             logger.info("Extracting activations...")
             analyzer.extract_activations(concept_examples,
                                          background_examples,
-                                         config["neural_pruning"]["num_layers"],
                                          config['neural_pruning']['activations_file_path'])
             logger.info(f"Activations saved to {config['neural_pruning']['activations_file_path']}")
         except Exception as e:
@@ -47,6 +46,7 @@ def main():
     # Analyze concept saliency for the top 10 layers
     results = analyzer.analyze_concept_saliency(
         activations_path = config['neural_pruning']['activations_file_path'],
+        num_layers = config['neural_pruning']['num_layers'],
         top_k = config['neural_pruning']['max_neurons_per_layer'],
         regularisation_strength = config['neural_pruning']['regularisation_strength'],
         statistical_test = False
@@ -71,6 +71,7 @@ def main():
                            config["testing"]["temperature"])
 
     except Exception as e:
+        print(e)
         logger.error(f"An error occurred: {e}")
         logger.debug(traceback.format_exc())
 

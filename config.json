@@ -5,14 +5,14 @@
         "device": "cuda"
     },
     "neural_pruning": {
-        "data": "data/red-1k.json",
-        "activations_file_path": "data/red-1k_meta-llama-Llama-3.2-1B-Instruct_activations.npz",
-        "num_layers": 16,
+        "data": "data/red-10k.json",
+        "activations_file_path": "data/red-10k_meta-llama-Llama-3.2-1B-Instruct_activations.npz",
+        "num_layers": 12,
         "max_neurons_per_layer": 8000,
-        "regularisation_strength": 50
+        "regularisation_strength": 2.0
     },  
     "testing" : {
-        "max_length": 70,
+        "max_length": 100,
         "num_return_sequences": 2,
         "temperature": 0.8
     }

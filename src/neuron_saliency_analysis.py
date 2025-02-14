@@ -97,7 +97,6 @@ class ConceptNeuronSaliencyAnalyzer:
             self,
             concept_texts: List[str],
             background_texts: List[str],
-            num_layers: int = 10,
             output_path: Optional[str] = "data/activations.npz"):
 
         # Print model structure for debugging
@@ -110,9 +109,6 @@ class ConceptNeuronSaliencyAnalyzer:
                     for submodule in module.children())
                     ]
         
-        # Select the top `num_layers` layers
-        layer_names = layer_names[-num_layers:]
-        logger.info(f"Selected top {num_layers} layers: {layer_names}")
         # Extract activations
         logger.info("Extracting layer activations for concept texts")
         concept_activations = self.extract_layer_activations(concept_texts, layer_names)
@@ -127,6 +123,7 @@ class ConceptNeuronSaliencyAnalyzer:
             self,
             activations_path: str,
             top_k: int = 10,
+            num_layers: int = 8,
             regularisation_strength: float = 10.0,
             statistical_test: bool = True
         ) -> Dict[str, List[Tuple[int, float]]]:
@@ -151,111 +148,123 @@ class ConceptNeuronSaliencyAnalyzer:
         concept_activations = activations["concept"].item()
         background_activations = activations["background"].item()
         
+        layer_names = [
+                name for name, module in self.model.named_modules()
+                if 'layers' in name and isinstance(module, nn.Module) and 
+                any(isinstance(submodule, nn.Linear) 
+                    for submodule in module.children())
+                    ]
+        
+        # Select the top `num_layers` layers
+        layer_names = layer_names[-num_layers:]
+        
         for layer_name in concept_activations:
-            
-            # Get counts from activations
-            concept_count = concept_activations[layer_name].shape[0]
-            background_count = background_activations[layer_name].shape[0]
-            
-            # Prepare data for logistic regression
-            X = np.vstack([
-            concept_activations[layer_name], 
-            background_activations[layer_name]
-            ])
-            y = np.concatenate([
-            np.ones(concept_count), 
-            np.zeros(background_count)
-            ])
-            
-            # Scale features
-            scaler = StandardScaler()
-            X_scaled = scaler.fit_transform(X)
-            
-            # Logistic regression with L1 regularization
-            lr = LogisticRegression(
-                penalty='l1',
-                solver='liblinear',
-                max_iter=1000,
-                class_weight='balanced',
-                C = regularisation_strength
-            )
-            lr.fit(X_scaled, y)
-            
-            # Get neuron importances
-            neuron_importances = np.abs(lr.coef_[0])
-            
-            # Optional statistical significance testing
-            if statistical_test:
-                # Perform t-test between concept and background activations
-                pvalues = []
-                for i in range(X.shape[1]):
-                    t_stat, p_val = stats.ttest_ind(
-                        concept_activations[layer_name][:, i],
-                        background_activations[layer_name][:, i]
-                    )
-                    pvalues.append(p_val)
-                
-                # Adjust importances based on statistical significance
-                neuron_importances *= -np.log10(pvalues)
-            
-            # Get top-k neurons
-            top_neurons = sorted(
-                enumerate(neuron_importances), 
-                key=lambda x: x[1], 
-                reverse=True
-            )[:top_k]
-
-            # Filter neurons with scores greater than zero
-            filtered_neurons = [(idx, importance) for idx, importance in top_neurons if importance > 0]
-            
-            # Calculate additional statistics
-            if filtered_neurons:
-                highest_score = max(importance for _, importance in filtered_neurons)
-                average_score = sum(importance for _, importance in filtered_neurons) / len(filtered_neurons)
+            if layer_name not in layer_names:
+                continue
             else:
-                highest_score = 0
-                average_score = 0
-            
-            logger.info(f"Layer {layer_name} has {len(filtered_neurons)} neurons with scores greater than zero.")
-            logger.info(f"Highest score in layer {layer_name}: {highest_score}")
-            logger.info(f"Average score in layer {layer_name}: {average_score}")
-
-            # Store saliency results with submodule names
-            for idx, importance in filtered_neurons:
-                # Access the layer module
-                layer_module = dict(self.model.named_modules())[layer_name]
+                # Get counts from activations
+                concept_count = concept_activations[layer_name].shape[0]
+                background_count = background_activations[layer_name].shape[0]
                 
-                # Get the hidden size from the layer module
-                if 'self_attn' in layer_name:
-                    hidden_size = layer_module.q_proj.weight.size(0)  # Assuming q_proj defines the hidden size
-                elif 'mlp' in layer_name:
-                    hidden_size = layer_module.up_proj.weight.size(0)  # Assuming up_proj defines the hidden size
+                # Prepare data for logistic regression
+                X = np.vstack([
+                concept_activations[layer_name], 
+                background_activations[layer_name]
+                ])
+                y = np.concatenate([
+                np.ones(concept_count), 
+                np.zeros(background_count)
+                ])
+                
+                # Scale features
+                scaler = StandardScaler()
+                X_scaled = scaler.fit_transform(X)
+                
+                # Logistic regression with L1 regularization
+                lr = LogisticRegression(
+                    penalty='l1',
+                    solver='liblinear',
+                    max_iter=1000,
+                    class_weight='balanced',
+                    C = regularisation_strength
+                )
+                lr.fit(X_scaled, y)
+                
+                # Get neuron importances
+                neuron_importances = np.abs(lr.coef_[0])
+                
+                # Optional statistical significance testing
+                if statistical_test:
+                    # Perform t-test between concept and background activations
+                    pvalues = []
+                    for i in range(X.shape[1]):
+                        t_stat, p_val = stats.ttest_ind(
+                            concept_activations[layer_name][:, i],
+                            background_activations[layer_name][:, i]
+                        )
+                        pvalues.append(p_val)
+                    
+                    # Adjust importances based on statistical significance
+                    neuron_importances *= -np.log10(pvalues)
+                
+                # Get top-k neurons
+                top_neurons = sorted(
+                    enumerate(neuron_importances), 
+                    key=lambda x: x[1], 
+                    reverse=True
+                )[:top_k]
+
+                # Filter neurons with scores greater than zero
+                filtered_neurons = [(idx, importance) for idx, importance in top_neurons if importance > 0]
+                
+                # Calculate additional statistics
+                if filtered_neurons:
+                    highest_score = max(importance for _, importance in filtered_neurons)
+                    average_score = sum(importance for _, importance in filtered_neurons) / len(filtered_neurons)
                 else:
-                    logger.debug(f"Layer {layer_name} does not have self_attn or mlp attributes.")
-                    continue  # Skip this layer if it doesn't fit expected structure
+                    highest_score = 0
+                    average_score = 0
+                
+                logger.info(f"Layer {layer_name} has {len(filtered_neurons)} neurons with scores greater than zero.")
+                logger.info(f"Highest score in layer {layer_name}: {highest_score}")
+                logger.info(f"Average score in layer {layer_name}: {average_score}")
 
-                if 'self_attn' in layer_name:
-                    # Determine the correct projection based on the index
-                    if idx < hidden_size:
-                        submodule_name = f"{layer_name}.q_proj"
-                        logger.debug(f"Neuron index {idx} corresponds to q_proj")
-                    elif idx < 2 * hidden_size:
-                        submodule_name = f"{layer_name}.k_proj"
-                        logger.debug(f"Neuron index {idx} corresponds to k_proj")
+                # Store saliency results with submodule names
+                for idx, importance in filtered_neurons:
+                    # Access the layer module
+                    layer_module = dict(self.model.named_modules())[layer_name]
+                    
+                    # Get the hidden size from the layer module
+                    if 'self_attn' in layer_name:
+                        hidden_size = layer_module.q_proj.weight.size(0)  # Assuming q_proj defines the hidden size
+                    elif 'mlp' in layer_name:
+                        hidden_size = layer_module.up_proj.weight.size(0)  # Assuming up_proj defines the hidden size
                     else:
-                        submodule_name = f"{layer_name}.v_proj"
-                        logger.debug(f"Neuron index {idx} corresponds to v_proj")
-                elif 'mlp' in layer_name:
-                    # Assuming that idx corresponds to the up_proj and down_proj
-                    if idx < hidden_size:
-                        submodule_name = f"{layer_name}.up_proj"
-                        logger.debug(f"Neuron index {idx} corresponds to up_proj")
-                    else:
-                        submodule_name = f"{layer_name}.down_proj"
-                        logger.debug(f"Neuron index {idx} corresponds to down_proj")
+                        logger.debug(f"Layer {layer_name} does not have self_attn or mlp attributes.")
+                        continue  # Skip this layer if it doesn't fit expected structure
 
-                # Append the neuron index and importance to the corresponding submodule
-                submodule_saliency.setdefault(submodule_name, []).append((idx, float(importance)))
+                    if 'self_attn' in layer_name:
+                        # Determine the correct projection based on the index
+                        if idx < hidden_size:
+                            submodule_name = f"{layer_name}.q_proj"
+                            logger.debug(f"Neuron index {idx} corresponds to q_proj")
+                        elif idx < 2 * hidden_size:
+                            submodule_name = f"{layer_name}.k_proj"
+                            logger.debug(f"Neuron index {idx} corresponds to k_proj")
+                        else:
+                            submodule_name = f"{layer_name}.v_proj"
+                            logger.debug(f"Neuron index {idx} corresponds to v_proj")
+                    elif 'mlp' in layer_name:
+                        # Assuming that idx corresponds to the up_proj and down_proj
+                        if idx < hidden_size:
+                            submodule_name = f"{layer_name}.up_proj"
+                            logger.debug(f"Neuron index {idx} corresponds to up_proj")
+                        else:
+                            submodule_name = f"{layer_name}.down_proj"
+                            logger.debug(f"Neuron index {idx} corresponds to down_proj")
+
+                    # Append the neuron index and importance to the corresponding submodule
+                    submodule_saliency.setdefault(submodule_name, []).append((idx, float(importance)))
 
         total_salient_neurons = sum(len(neurons) for neurons in submodule_saliency.values())
         self.total_neurons(total_salient_neurons)
